@@ -36,7 +36,7 @@ public class AutoCompleteTextField<E> extends TextField
 	 * suburb.setQueryListener(new AutoCompeleteQueryListener<PostCode>()
 	 * {
 	 * 
-	 * 	    &#64;Override
+	 * 	    @Override
 	 * 	    public void handleQuery(AutoCompleteTextFieldV2<PostCode> field,String queryText)
 	 * 	    {
 	 * 		    field.addOption(new PostCode(3241),"Title");
@@ -46,7 +46,7 @@ public class AutoCompleteTextField<E> extends TextField
 	 * 	suburb.setOptionSelectionListener(new AutoCompleteOptionSelected<PostCode>()
 	 * 	{
 	 * 	    
-	 * 	    &#64;Override
+	 * 	    @Override
 	 * 	    public void optionSelected(AutoCompleteTextFieldV2<PostCode> field, PostCode option)
 	 * 	    {
 	 * 		field.setValue(option.getSuburb());
@@ -65,12 +65,6 @@ public class AutoCompleteTextField<E> extends TextField
 	 * complete context menu without selecting anything.
 	 */
 
-	public AutoCompleteTextField(final String caption)
-	{
-		this();
-		setCaption(caption);
-	}
-
 	public AutoCompleteTextField()
 	{
 		setTextChangeEventMode(TextChangeEventMode.LAZY);
@@ -79,7 +73,6 @@ public class AutoCompleteTextField<E> extends TextField
 		{
 			private static final long serialVersionUID = 1L;
 
-			@Override
 			public void textChange(final TextChangeEvent event)
 			{
 				options.clear();
@@ -102,9 +95,7 @@ public class AutoCompleteTextField<E> extends TextField
 	{
 		// Don't create a new context menu if the existing one is still open
 		if (isContextMenuOpen)
-		{
 			return;
-		}
 
 		// Create a new ContextMenu as each instance can only be added and
 		// removed from a parent once
@@ -176,8 +167,6 @@ public class AutoCompleteTextField<E> extends TextField
 	public void hideAutoComplete()
 	{
 		if (contextMenu != null)
-		{
 			contextMenu.hide();
-		}
 	}
 }

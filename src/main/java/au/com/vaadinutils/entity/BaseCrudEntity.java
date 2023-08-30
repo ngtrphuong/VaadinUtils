@@ -1,8 +1,7 @@
 package au.com.vaadinutils.entity;
 
-import java.io.Serializable;
-
 import javax.persistence.Column;
+import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
@@ -11,12 +10,11 @@ import javax.persistence.MappedSuperclass;
 import au.com.vaadinutils.crud.ChildCrudEntity;
 import au.com.vaadinutils.dao.JpaEntityHelper;
 
-@MappedSuperclass
-public abstract class BaseCrudEntity implements ChildCrudEntity, Serializable
-{
-	// Logger logger = org.apache.logging.log4j.LogManager.getLogger();
 
-	private static final long serialVersionUID = 1L;
+@MappedSuperclass
+public abstract class BaseCrudEntity implements ChildCrudEntity
+{
+	// Logger logger = LogManager.getLogger();
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -25,7 +23,6 @@ public abstract class BaseCrudEntity implements ChildCrudEntity, Serializable
 	@Column(updatable = false)
 	String guid = JpaEntityHelper.getGuid();
 
-	@Override
 	public String getGuid()
 	{
 		return guid;
@@ -52,7 +49,7 @@ public abstract class BaseCrudEntity implements ChildCrudEntity, Serializable
 
 	/*
 	 * (non-Javadoc)
-	 *
+	 * 
 	 * @see java.lang.Object#hashCode()
 	 */
 	@Override
@@ -66,7 +63,7 @@ public abstract class BaseCrudEntity implements ChildCrudEntity, Serializable
 
 	/*
 	 * (non-Javadoc)
-	 *
+	 * 
 	 * @see java.lang.Object#equals(java.lang.Object)
 	 */
 	@Override

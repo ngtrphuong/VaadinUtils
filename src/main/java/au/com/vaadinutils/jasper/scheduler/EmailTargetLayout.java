@@ -3,7 +3,13 @@ package au.com.vaadinutils.jasper.scheduler;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import au.com.vaadinutils.dao.JpaBaseDao;
+import au.com.vaadinutils.jasper.scheduler.entities.ReportEmailRecipient;
+import au.com.vaadinutils.jasper.scheduler.entities.ReportEmailRecipientVisibility;
+import au.com.vaadinutils.validator.EmailValidator;
 
 import com.vaadin.data.Item;
 import com.vaadin.data.util.IndexedContainer;
@@ -16,16 +22,11 @@ import com.vaadin.ui.HorizontalLayout;
 import com.vaadin.ui.VerticalLayout;
 import com.vaadin.ui.themes.Reindeer;
 
-import au.com.vaadinutils.dao.JpaBaseDao;
-import au.com.vaadinutils.jasper.scheduler.entities.ReportEmailRecipient;
-import au.com.vaadinutils.jasper.scheduler.entities.ReportEmailRecipientVisibility;
-import au.com.vaadinutils.validator.EmailValidator;
-
 public class EmailTargetLayout extends VerticalLayout
 {
 	private static final long serialVersionUID = -6108970593368681878L;
 
-	Logger logger = org.apache.logging.log4j.LogManager.getLogger();
+	Logger logger = LogManager.getLogger();
 	List<EmailTargetLine> lines = new LinkedList<EmailTargetLine>();
 
 	private final static int lineHeight = 30;

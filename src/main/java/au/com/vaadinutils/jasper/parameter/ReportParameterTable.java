@@ -3,62 +3,60 @@ package au.com.vaadinutils.jasper.parameter;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 
 import javax.persistence.metamodel.SingularAttribute;
 
+import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import au.com.vaadinutils.crud.CrudEntity;
+import au.com.vaadinutils.dao.JpaBaseDao;
+import au.com.vaadinutils.fields.SelectionListener;
+import au.com.vaadinutils.fields.TableCheckBoxSelect;
+import au.com.vaadinutils.jasper.scheduler.entities.DateParameterType;
 
 import com.vaadin.addon.jpacontainer.JPAContainer;
 import com.vaadin.addon.jpacontainer.QueryModifierDelegate;
+import com.vaadin.addon.jpacontainer.fieldfactory.MultiSelectConverter;
+import com.vaadin.data.Container;
 import com.vaadin.data.Container.Filter;
-import com.vaadin.data.Item;
-import com.vaadin.data.Property;
 import com.vaadin.data.Property.ValueChangeEvent;
 import com.vaadin.data.Property.ValueChangeListener;
-import com.vaadin.data.sort.SortOrder;
+import com.vaadin.data.Validator;
 import com.vaadin.data.util.filter.SimpleStringFilter;
 import com.vaadin.event.FieldEvents.TextChangeEvent;
 import com.vaadin.event.FieldEvents.TextChangeListener;
-import com.vaadin.event.SelectionEvent;
-import com.vaadin.event.SelectionEvent.SelectionListener;
 import com.vaadin.server.ErrorMessage;
-import com.vaadin.shared.data.sort.SortDirection;
+import com.vaadin.ui.AbstractField;
 import com.vaadin.ui.Alignment;
+import com.vaadin.ui.CheckBox;
 import com.vaadin.ui.Component;
-import com.vaadin.ui.Grid;
-import com.vaadin.ui.Grid.MultiSelectionModel;
-import com.vaadin.ui.Grid.SelectionMode;
 import com.vaadin.ui.HorizontalLayout;
 import com.vaadin.ui.Label;
+import com.vaadin.ui.Table.ColumnHeaderMode;
 import com.vaadin.ui.TextField;
-import com.vaadin.ui.UI;
 import com.vaadin.ui.VerticalLayout;
 
-import au.com.vaadinutils.crud.CrudEntity;
-import au.com.vaadinutils.crud.GridHeadingPropertySet;
-import au.com.vaadinutils.dao.EntityManagerProvider;
-import au.com.vaadinutils.dao.JpaBaseDao;
-import au.com.vaadinutils.errorHandling.ErrorWindow;
-import au.com.vaadinutils.jasper.scheduler.entities.DateParameterType;
-
-public class ReportParameterTable<T extends CrudEntity> extends ReportParameter<String>
-		implements ReportParameterSelectionListener<T>
+public class ReportParameterTable<T extends CrudEntity> extends ReportParameter<String> implements
+		ReportParameterSelectionListener<T>
 {
 
-	protected Grid grid;
+	protected TableCheckBoxSelect table;
 	private Long defaultValue = null;
 	JPAContainer<T> container = null;
-	protected VerticalLayout layout = new VerticalLayout();
-	protected String caption;
-	Logger logger = org.apache.logging.log4j.LogManager.getLogger();
-	protected SingularAttribute<T, String> displayField;
+	private VerticalLayout layout;
+	private String caption;
+	Logger logger = LogManager.getLogger();
+	private SingularAttribute<T, String> displayField;
 
 	public ReportParameterTable(String caption, String parameterName, Class<T> tableClass,
 			SingularAttribute<T, String> displayField)
 	{
 		super(caption, parameterName);
 		init(caption, tableClass, displayField);
-		setSelectionMode(SelectionMode.MULTI);
+		setNotEmpty();
+
 	}
 
 	public ReportParameterTable(String caption, String parameterName, Class<T> tableClass,
@@ -67,179 +65,114 @@ public class ReportParameterTable<T extends CrudEntity> extends ReportParameter<
 		super(caption, parameterName);
 		init(caption, tableClass, displayField);
 		this.defaultValue = defaultValue;
-		setSelectionMode(SelectionMode.MULTI);
-
+		setNotEmpty();
 	}
 
-	public void deselectAll()
-	{
-		grid.deselectAll();
-	}
-
-	public void selectAll()
-	{
-		((MultiSelectionModel) grid.getSelectionModel()).selectAll();
-	}
-
-	protected void addComponentToLayout(Component comp)
-	{
-		layout.addComponent(comp);
-	}
-
-	protected void addComponentToLayout(Component comp, int position)
-	{
-		layout.addComponent(comp, position);
-	}
-
-	void setSelectionMode(final SelectionMode mode)
-	{
-		UI ui = UI.getCurrent();
-		if (ui != null)
-		{
-			Runnable runner = new Runnable()
-			{
-
-				@Override
-				public void run()
-				{
-					if (mode == SelectionMode.MULTI)
-					{
-						grid.setSelectionMode(SelectionMode.MULTI);
-
-						grid.setSelectionModel(new Grid.MultiSelectionModel());
-					}
-					else if (mode == SelectionMode.SINGLE)
-					{
-						grid.setSelectionMode(SelectionMode.SINGLE);
-
-						grid.setSelectionModel(new Grid.SingleSelectionModel());
-
-					}
-					else
-					{
-						throw new RuntimeException("SelectionMode none not supported");
-					}
-				}
-			};
-			UI.getCurrent().accessSynchronously(runner);
-		}
-		else
-		{
-			logger.warn("No vaadin session available, not setting up UI");
-		}
-
-	}
-
-	protected void init(final String caption, final Class<T> tableClass,
-			final SingularAttribute<T, String> displayField)
+	private void init(String caption, Class<T> tableClass, final SingularAttribute<T, String> displayField)
 	{
 		JpaBaseDao.getGenericDao(tableClass).flushCache();
 		container = createContainer(tableClass, displayField);
+		this.displayField = displayField;
+		layout = new VerticalLayout();
+		layout.setSizeFull();
+		this.caption = caption;
 
-		UI ui = UI.getCurrent();
-		if (ui != null)
+		TextField searchText = new TextField();
+		searchText.setInputPrompt("Search");
+		searchText.setWidth("100%");
+		searchText.setImmediate(true);
+		searchText.setHeight("20");
+		searchText.addTextChangeListener(new TextChangeListener()
 		{
-			Runnable runner = new Runnable()
+
+			private static final long serialVersionUID = 1315710313315289836L;
+
+			@Override
+			public void textChange(TextChangeEvent event)
 			{
-
-				@Override
-				public void run()
+				String value = event.getText();
+				container.removeAllContainerFilters();
+				if (value.length() > 0)
 				{
-
-					try (AutoCloseable closer = EntityManagerProvider.setThreadLocalEntityManagerTryWithResources())
-					{
-						ReportParameterTable.this.displayField = displayField;
-						layout.setSizeFull();
-						ReportParameterTable.this.caption = caption;
-
-						TextField searchText = new TextField();
-						searchText.setInputPrompt("Search");
-						searchText.setWidth("100%");
-						searchText.setImmediate(true);
-						searchText.setHeight("20");
-						searchText.addTextChangeListener(new TextChangeListener()
-						{
-
-							private static final long serialVersionUID = 1315710313315289836L;
-
-							@Override
-							public void textChange(TextChangeEvent event)
-							{
-								String value = event.getText();
-								removeAllContainerFilters();
-								if (value.length() > 0)
-								{
-									container.addContainerFilter(
-											new SimpleStringFilter(displayField.getName(), value, true, false));
-								}
-
-							}
-						});
-
-						grid = new Grid();
-						grid.setImmediate(true);
-
-						grid.setSizeFull();
-						// table.setHeight("150");
-
-						grid.setContainerDataSource(container);
-
-						new GridHeadingPropertySet.Builder<T>().createColumn(caption, displayField.getName()).build()
-								.applyToGrid(grid);
-
-						List<SortOrder> orders = new LinkedList<>();
-						orders.add(new SortOrder(displayField.getName(), SortDirection.ASCENDING));
-						grid.setSortOrder(orders);
-
-						final Label selectionCount = new Label("0 selected");
-
-						// removed for concertina
-						// layout.addComponent(new Label(caption));
-						layout.addComponent(searchText);
-						layout.addComponent(grid);
-
-						HorizontalLayout selectionLayout = new HorizontalLayout();
-						selectionLayout.setHeight("30");
-						selectionLayout.setWidth("100%");
-						selectionLayout.addComponent(selectionCount);
-						selectionLayout.setComponentAlignment(selectionCount, Alignment.MIDDLE_RIGHT);
-						layout.addComponent(selectionLayout);
-						grid.addSelectionListener(new SelectionListener()
-						{
-
-							/**
-							 * 
-							 */
-							private static final long serialVersionUID = 1L;
-
-							@Override
-							public void select(SelectionEvent event)
-							{
-								validate();
-
-								selectionCount.setValue("" + event.getSelected().size() + " selected");
-
-							}
-						});
-
-						layout.setExpandRatio(grid, 1);
-						// layout.setComponentAlignment(selectAll,
-						// Alignment.BOTTOM_RIGHT);
-					}
-					catch (Exception e)
-					{
-						ErrorWindow.showErrorWindow(e);
-					}
-
+					container.addContainerFilter(new SimpleStringFilter(displayField.getName(), value, true, false));
 				}
-			};
-			UI.getCurrent().accessSynchronously(runner);
 
-		}
-		else
+			}
+		});
+
+		table = new TableCheckBoxSelect();
+
+		table.setSizeFull();
+		// table.setHeight("150");
+
+		table.setContainerDataSource(container);
+
+		table.setConverter(MultiSelectConverter.class);
+
+		table.setColumnHeaderMode(ColumnHeaderMode.HIDDEN);
+		setVisibleColumns(displayField);
+		table.setColumnWidth(displayField.getName(), 130);
+		table.setColumnExpandRatio(displayField.getName(), 1);
+		table.setNewItemsAllowed(false);
+		table.setNullSelectionAllowed(false);
+		table.setMultiSelect(true);
+
+		CheckBox selectAll = new CheckBox("Select all");
+
+		selectAll.addValueChangeListener(new ValueChangeListener()
 		{
-			logger.warn("No vaadin session available, not setting up UI");
-		}
+
+			private static final long serialVersionUID = 3046649134868865285L;
+
+			@Override
+			public void valueChange(ValueChangeEvent event)
+			{
+				if ((Boolean) event.getProperty().getValue() == true)
+				{
+					table.selectAll();
+				}
+				else
+				{
+					table.deselectAll();
+				}
+
+			}
+		});
+
+		final Label selectionCount = new Label("0 selected");
+
+		// removed for concertina
+		// layout.addComponent(new Label(caption));
+		layout.addComponent(searchText);
+		layout.addComponent(table);
+
+		HorizontalLayout selectionLayout = new HorizontalLayout();
+		selectionLayout.setHeight("30");
+		selectionLayout.setWidth("100%");
+		selectionLayout.addComponent(selectAll);
+		selectionLayout.addComponent(selectionCount);
+		selectionLayout.setComponentAlignment(selectAll, Alignment.MIDDLE_LEFT);
+		selectionLayout.setComponentAlignment(selectionCount, Alignment.MIDDLE_RIGHT);
+		layout.addComponent(selectionLayout);
+		table.addSelectionListener(new SelectionListener()
+		{
+
+			@Override
+			public void selectedItems(int count)
+			{
+				selectionCount.setValue("" + count + " selected");
+
+			}
+		});
+
+		layout.setExpandRatio(table, 1);
+		// layout.setComponentAlignment(selectAll, Alignment.BOTTOM_RIGHT);
+
+	}
+
+	protected void setVisibleColumns(final SingularAttribute<T, String> displayField)
+	{
+		table.setVisibleColumns(displayField.getName());
 	}
 
 	/**
@@ -269,115 +202,19 @@ public class ReportParameterTable<T extends CrudEntity> extends ReportParameter<
 		return null;
 	}
 
-	@Override
-	public void addSelectionListener(final ValueChangeListener listener)
+	public void addSelectionListener(ValueChangeListener listener)
 	{
-		UI ui = UI.getCurrent();
-		if (ui != null)
-		{
-			Runnable runner = new Runnable()
-			{
-
-				@Override
-				public void run()
-				{
-
-					grid.addSelectionListener(new SelectionListener()
-					{
-
-						/**
-						 * 
-						 */
-						private static final long serialVersionUID = 1L;
-
-						@Override
-						public void select(SelectionEvent event)
-						{
-
-							listener.valueChange(new ValueChangeEvent()
-							{
-
-								/**
-								 * 
-								 */
-								private static final long serialVersionUID = 1L;
-
-								@Override
-								public Property<Collection<Long>> getProperty()
-								{
-									return new Property<Collection<Long>>()
-									{
-
-										/**
-										 * 
-										 */
-										private static final long serialVersionUID = 1L;
-
-										@Override
-										public Collection<Long> getValue()
-										{
-											return getSelectedIds();
-										}
-
-										@Override
-										public void setValue(Collection<Long> newValue)
-												throws com.vaadin.data.Property.ReadOnlyException
-										{
-
-										}
-
-										@Override
-										public Class<? extends Collection<Long>> getType()
-										{
-											return null;
-										}
-
-										@Override
-										public boolean isReadOnly()
-										{
-											return false;
-										}
-
-										@Override
-										public void setReadOnly(boolean newStatus)
-										{
-
-										}
-									};
-								}
-							});
-
-						}
-					});
-				}
-			};
-			UI.getCurrent().accessSynchronously(runner);
-		}
-		else
-		{
-			logger.warn("No vaadin session available, not setting up UI");
-		}
-
-	}
-
-	private Collection<Long> getSelectedIds()
-	{
-		Collection<Long> ids = new LinkedList<>();
-		for (Object id : grid.getSelectedRows())
-		{
-			ids.add((Long) id);
-		}
-		return ids;
+		table.addValueChangeListener(listener);
 	}
 
 	public void removeAllContainerFilters()
 	{
-		container.removeAllContainerFilters();
+		((Container.Filterable) table.getContainerDataSource()).removeAllContainerFilters();
 	}
 
 	public void addContainerFilter(Filter filter)
 	{
-		container.addContainerFilter(filter);
+		((Container.Filterable) table.getContainerDataSource()).addContainerFilter(filter);
 	}
 
 	@Override
@@ -386,9 +223,10 @@ public class ReportParameterTable<T extends CrudEntity> extends ReportParameter<
 
 		try
 		{
-			Collection<Object> ids = grid.getSelectedRows();
+			@SuppressWarnings("unchecked")
+			Set<Long> ids = (Set<Long>) table.getSelectedItems();
 			String selection = "";
-			for (Object id : ids)
+			for (Long id : ids)
 			{
 				selection += "" + id + ",";
 			}
@@ -412,53 +250,72 @@ public class ReportParameterTable<T extends CrudEntity> extends ReportParameter<
 
 	}
 
+	@SuppressWarnings({ "unchecked", "rawtypes" })
 	@Override
 	public boolean validate()
 	{
-		validateMe();
-		return getValue().size() > 0;
+		return super.validateField((AbstractField) table);
 	}
 
-	public void validateMe()
+	public void allowEmpty()
 	{
+		table.removeAllValidators();
+	}
 
-		grid.setComponentError(null);
-		setComponentErrorForValidateListener(null);
-		grid.setComponentError(null);
-		setComponentErrorForValidateListener(null);
-		Collection<Long> ids = getSelectedIds();
-		if (ids.size() == 0)
+	private ReportParameter<?> setNotEmpty()
+	{
+		Validator validator = new Validator()
 		{
-			ErrorMessage error = new ErrorMessage()
+
+			/**
+			 * 
+			 */
+			private static final long serialVersionUID = 8942263638713110223L;
+
+			@SuppressWarnings("unchecked")
+			@Override
+			public void validate(Object value) throws InvalidValueException
 			{
-
-				private static final long serialVersionUID = -6437991860908562482L;
-
-				@Override
-				public ErrorLevel getErrorLevel()
+				setValidateListenerComponentError(null);
+				table.setComponentError(null);
+				setValidateListenerComponentError(null);
+				table.setComponentError(null);
+				Collection<Long> ids = (Collection<Long>) table.getSelectedItems();
+				if (ids.size() == 0)
 				{
-					return ErrorLevel.ERROR;
+					ErrorMessage error = new ErrorMessage()
+					{
+
+						private static final long serialVersionUID = -6437991860908562482L;
+
+						@Override
+						public ErrorLevel getErrorLevel()
+						{
+							return ErrorLevel.ERROR;
+						}
+
+						@Override
+						public String getFormattedHtmlMessage()
+						{
+							return "You must select at least one " + caption;
+						}
+					};
+					setValidateListenerComponentError(error);
+					throw new Validator.EmptyValueException("You must select at least one " + caption);
 				}
 
-				@Override
-				public String getFormattedHtmlMessage()
+			}
+
+			private void setValidateListenerComponentError(ErrorMessage error)
+			{
+				if (validateListener != null)
 				{
-					return "You must select at least one " + caption;
+					validateListener.setComponentError(error);
 				}
-			};
-			grid.setComponentError(error);
-			setComponentErrorForValidateListener(error);
-
-		}
-
-	}
-
-	private void setComponentErrorForValidateListener(ErrorMessage error)
-	{
-		if (validateListener != null)
-		{
-			validateListener.setComponentError(error);
-		}
+			}
+		};
+		table.addValidator(validator);
+		return this;
 	}
 
 	@Override
@@ -492,24 +349,16 @@ public class ReportParameterTable<T extends CrudEntity> extends ReportParameter<
 		try
 		{
 
-			Collection<Object> ids = grid.getSelectedRows();
+			@SuppressWarnings("unchecked")
+			Set<Long> ids = (Set<Long>) table.getSelectedItems();
 			String selection = "";
 			int ctr = 0;
-			for (Object id : ids)
+			for (Long id : ids)
 			{
 				ctr++;
-				final Item item = grid.getContainerDataSource().getItem(id);
-
-				// we get nulls if the entity is deleted from the database after
-				// the report parameter is saved
-				if (item != null)
-				{
-					selection += "" + item.getItemProperty(displayField.getName()) + ",";
-				}
+				selection += "" + table.getItem(id).getItemProperty(displayField.getName()) + ",";
 				if (ctr > 2)
-				{
 					break;
-				}
 			}
 			if (selection.length() > 1)
 			{
@@ -522,7 +371,7 @@ public class ReportParameterTable<T extends CrudEntity> extends ReportParameter<
 			// supply default if emtpy
 			if (selection.length() == 0 && defaultValue != null)
 			{
-				selection = "" + defaultValue;
+				selection = "" + table.getItemCaption(defaultValue);
 			}
 			return selection;
 
@@ -531,8 +380,7 @@ public class ReportParameterTable<T extends CrudEntity> extends ReportParameter<
 		{
 			for (String param : parameters)
 			{
-				logger.error("Exception while getting value(s) for {}, thread{}", param,
-						Thread.currentThread().getId());
+				logger.error("Exception while getting value(s) for {}, thread{}", param, Thread.currentThread().getId());
 			}
 			throw new RuntimeException(e);
 		}
@@ -542,7 +390,7 @@ public class ReportParameterTable<T extends CrudEntity> extends ReportParameter<
 	public void setValueAsString(String value, String parameterName)
 	{
 		String[] values = value.split(",");
-		List<Long> idList = new LinkedList<>();
+		List<Long> idList = new LinkedList<Long>();
 
 		for (String id : values)
 		{
@@ -557,18 +405,7 @@ public class ReportParameterTable<T extends CrudEntity> extends ReportParameter<
 		}
 		if (idList.size() > 0)
 		{
-			for (Long id : idList)
-			{
-				try
-				{
-					grid.select(id);
-				}
-				catch (IllegalArgumentException e)
-				{
-					logger.warn("Id doesn't exist in container");
-				}
-			}
-
+			table.setSelectedValue(idList);
 		}
 
 	}
@@ -583,13 +420,6 @@ public class ReportParameterTable<T extends CrudEntity> extends ReportParameter<
 	public DateParameterType getDateParameterType()
 	{
 		throw new RuntimeException("Not implemented");
-	}
-
-	@Override
-	public Collection<Object> getValue()
-	{
-
-		return grid.getSelectedRows();
 	}
 
 }

@@ -4,7 +4,7 @@ public interface WindowSizer
 {
 
 	int width();
-	// Logger logger = org.apache.logging.log4j.LogManager.getLogger();
+	// Logger logger = LogManager.getLogger();
 
 	int height();
 }

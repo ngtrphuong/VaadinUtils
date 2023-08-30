@@ -1,12 +1,8 @@
 package au.com.vaadinutils.fields;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.vaadin.peter.contextmenu.ContextMenu;
 
 import com.vaadin.event.ItemClickEvent;
-import com.vaadin.event.MouseEvents.ClickEvent;
 import com.vaadin.shared.MouseEventDetails.MouseButton;
 import com.vaadin.ui.Table;
 import com.vaadin.ui.Table.FooterClickEvent;
@@ -18,7 +14,7 @@ public class TableContextMenu extends ContextMenu
 {
 	private static final long serialVersionUID = 1L;
 
-	private List<TableContextMenuEvents> eventsList = new ArrayList<>();
+	private TableContextMenuEvents events;
 
 	/**
 	 * Assigns this as the context menu of given table. Allows context menu to
@@ -50,9 +46,7 @@ public class TableContextMenu extends ContextMenu
 				{
 					if (event.getButton() == MouseButton.RIGHT)
 					{
-						for (TableContextMenuEvents events : eventsList)
-							events.preContextMenuOpen();
-
+						events.preContextMenuOpen();
 						fireEvent(new ContextMenuOpenedOnTableRowEvent(TableContextMenu.this, table, event.getItemId(),
 								event.getPropertyId()));
 						open(event.getClientX(), event.getClientY());
@@ -72,9 +66,7 @@ public class TableContextMenu extends ContextMenu
 				{
 					if (event.getButton() == MouseButton.RIGHT)
 					{
-						for (TableContextMenuEvents events : eventsList)
-							events.preContextMenuOpen();
-
+						events.preContextMenuOpen();
 						fireEvent(new ContextMenuOpenedOnTableHeaderEvent(TableContextMenu.this, table, event
 								.getPropertyId()));
 						open(event.getClientX(), event.getClientY());
@@ -94,9 +86,7 @@ public class TableContextMenu extends ContextMenu
 				{
 					if (event.getButton() == MouseButton.RIGHT)
 					{
-						for (TableContextMenuEvents events : eventsList)
-							events.preContextMenuOpen();
-
+						events.preContextMenuOpen();
 						fireEvent(new ContextMenuOpenedOnTableHeaderEvent(TableContextMenu.this, table, event
 								.getPropertyId()));
 						open(event.getClientX(), event.getClientY());
@@ -106,19 +96,8 @@ public class TableContextMenu extends ContextMenu
 		}
 	}
 
-	public void addEvents(final TableContextMenuEvents events)
+	public void setEvents(TableContextMenuEvents events)
 	{
-		eventsList.add(events);
-	}
-
-	public void openRow(final ClickEvent event, final Object itemId, final Object propertyId)
-	{
-		if (event.getButton() == MouseButton.RIGHT)
-		{
-			for (TableContextMenuEvents events : eventsList)
-				events.preContextMenuOpen();
-
-			open(event.getClientX(), event.getClientY());
-		}
+		this.events = events;
 	}
 }

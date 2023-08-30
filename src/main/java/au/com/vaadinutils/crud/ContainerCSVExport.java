@@ -14,9 +14,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jsoup.Jsoup;
 import org.jsoup.examples.HtmlToPlainText;
+
+import au.com.bytecode.opencsv.CSVWriter;
+import au.com.vaadinutils.fields.ClickableLabel;
+import au.com.vaadinutils.jasper.AttachmentType;
+import au.com.vaadinutils.util.PipedOutputStreamWrapper;
 
 import com.vaadin.data.Item;
 import com.vaadin.data.Property;
@@ -28,29 +34,23 @@ import com.vaadin.ui.Alignment;
 import com.vaadin.ui.Button;
 import com.vaadin.ui.HorizontalLayout;
 import com.vaadin.ui.Label;
-import com.vaadin.ui.Link;
 import com.vaadin.ui.Notification;
 import com.vaadin.ui.Table;
 import com.vaadin.ui.Table.ColumnGenerator;
 import com.vaadin.ui.UI;
 import com.vaadin.ui.Window;
 
-import au.com.bytecode.opencsv.CSVWriter;
-import au.com.vaadinutils.fields.ClickableLabel;
-import au.com.vaadinutils.jasper.AttachmentType;
-import au.com.vaadinutils.util.PipedOutputStreamWrapper;
-
 public class ContainerCSVExport<E>
 {
-	// Logger logger = org.apache.logging.log4j.LogManager.getLogger();
+	// Logger logger = LogManager.getLogger();
 
 	PipedOutputStreamWrapper stream = new PipedOutputStreamWrapper();
-	Logger logger = org.apache.logging.log4j.LogManager.getLogger();
-	private HeadingPropertySet headingsSet;
+	Logger logger = LogManager.getLogger();
+	private HeadingPropertySet<E> headingsSet;
 	private Table table;
 	private LinkedHashMap<String, Object> extraColumnHeadersAndPropertyIds;
 
-	public ContainerCSVExport(final String fileName, final Table table, final HeadingPropertySet headingsSet)
+	public ContainerCSVExport(final String fileName, final Table table, final HeadingPropertySet<E> headingsSet)
 	{
 
 		this.table = table;
@@ -150,15 +150,15 @@ public class ContainerCSVExport<E>
 		return downloadButton;
 	}
 
-	public void export(Table table, Writer stream, HeadingPropertySet headingsSet) throws IOException
+	public void export(Table table, Writer stream, HeadingPropertySet<E> headingsSet) throws IOException
 	{
 
 		CSVWriter writer = new CSVWriter(stream);
 
 		Map<String, Object> headerPropertyMap = new LinkedHashMap<>();
 
-		List<HeadingToPropertyId> cols = headingsSet.getColumns();
-		for (HeadingToPropertyId col : cols)
+		List<HeadingToPropertyId<E>> cols = headingsSet.getColumns();
+		for (HeadingToPropertyId<E> col : cols)
 		{
 			headerPropertyMap.put(col.getHeader(), col.getPropertyId());
 		}
@@ -173,16 +173,9 @@ public class ContainerCSVExport<E>
 		Set<Object> properties = new LinkedHashSet<>();
 		properties.addAll(headerPropertyMap.values());
 
-		int ctr = 0;
 		for (Object id : table.getContainerDataSource().getItemIds())
 		{
 			writeRow(writer, table, id, properties);
-			ctr++;
-			if (ctr > 100000)
-			{
-				writer.writeNext(new String[] { "Export stopped at 100,000 lines." });
-				break;
-			}
 		}
 
 		writer.flush();
@@ -201,11 +194,7 @@ public class ContainerCSVExport<E>
 			if (itemProperty != null && itemProperty.getValue() != null)
 			{
 				ColumnGenerator generator = table.getColumnGenerator(propertyId);
-
-				// added handling for generated Boolean columns, - just using
-				// the default property toString()
-
-				if (generator != null && itemProperty.getType() != Boolean.class)
+				if (generator != null)
 				{
 					Object value = generator.generateCell(table, id, propertyId);
 					if (value instanceof Label)
@@ -216,14 +205,7 @@ public class ContainerCSVExport<E>
 					{
 						value = new HtmlToPlainText().getPlainText(Jsoup.parse(itemProperty.getValue().toString()));
 					}
-					if(value instanceof Link)
-					{
-					    value = new HtmlToPlainText().getPlainText(Jsoup.parse(itemProperty.getValue().toString()));
-					}
-					if (value != null)
-					{
-						values[i++] = value.toString();
-					}
+					values[i++] = value.toString();
 				}
 				else
 				{
@@ -252,21 +234,7 @@ public class ContainerCSVExport<E>
 
 						if (value instanceof AbstractLayout)
 						{
-
-							// if you want your generated field to be exported,
-							// set a string using setData() on the layout.
-							if (((AbstractLayout) value).getData() instanceof ContainerCSVExportData)
-							{
-								value = ((AbstractLayout) value).getData().toString();
-							}
-							else
-							{
-								value = "";
-							}
-						}
-						if(value instanceof Link)
-						{
-						    value = new HtmlToPlainText().getPlainText(Jsoup.parse(((Link) value).getCaption()));
+							value = new HtmlToPlainText().getPlainText(Jsoup.parse(value.toString()));
 						}
 					}
 					if (value == null)

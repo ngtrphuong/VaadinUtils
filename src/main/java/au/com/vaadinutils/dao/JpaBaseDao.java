@@ -22,20 +22,14 @@ import javax.persistence.metamodel.EntityType;
 import javax.persistence.metamodel.Metamodel;
 import javax.persistence.metamodel.SingularAttribute;
 
-import org.apache.logging.log4j.Logger;
 import org.vaadin.addons.lazyquerycontainer.EntityContainer;
 
 import com.google.common.base.Preconditions;
 import com.vaadin.addon.jpacontainer.JPAContainer;
 
-import au.com.vaadinutils.entity.BaseCrudEntity;
-import au.com.vaadinutils.entity.BaseCrudEntity_;
-
 public class JpaBaseDao<E, K> implements Dao<E, K>
 {
 	protected Class<E> entityClass;
-
-	Logger logger = org.apache.logging.log4j.LogManager.getLogger();
 
 	public interface Condition<E>
 	{
@@ -50,7 +44,7 @@ public class JpaBaseDao<E, K> implements Dao<E, K>
 
 	static public <E> JpaBaseDao<E, Long> getGenericDao(Class<E> class1)
 	{
-		return new JpaBaseDao<>(class1);
+		return new JpaBaseDao<E, Long>(class1);
 
 	}
 
@@ -72,7 +66,7 @@ public class JpaBaseDao<E, K> implements Dao<E, K>
 	 *
 	 * @return
 	 */
-	public static EntityManager getEntityManager()
+	protected static EntityManager getEntityManager()
 	{
 		EntityManager em = EntityManagerProvider.getEntityManager();
 
@@ -118,25 +112,9 @@ public class JpaBaseDao<E, K> implements Dao<E, K>
 		return findById((K) new Long(id));
 	}
 
-	public <T> JpaDslSelectAttributeBuilder<E, T> select(SingularAttribute<E, T> attribute)
-	{
-		return new JpaDslSelectAttributeBuilder<>(entityClass, attribute);
-	}
-
 	@Override
 	public E findById(K id)
 	{
-		if (id == null)
-		{
-
-			logger.warn("Null key provided for findById on entity " + entityClass);
-			if (logger.isDebugEnabled())
-			{
-				Exception e = new Exception("Null Key Provided for entity " + entityClass);
-				logger.debug(e, e);
-			}
-			return null;
-		}
 		return getEntityManager().find(entityClass, id);
 	}
 
@@ -149,9 +127,7 @@ public class JpaBaseDao<E, K> implements Dao<E, K>
 		@SuppressWarnings("unchecked")
 		List<E> entities = query.getResultList();
 		if (entities.size() > 0)
-		{
 			entity = entities.get(0);
-		}
 		return entity;
 	}
 
@@ -164,9 +140,7 @@ public class JpaBaseDao<E, K> implements Dao<E, K>
 		@SuppressWarnings("unchecked")
 		List<E> entities = query.getResultList();
 		if (entities.size() > 0)
-		{
 			entity = entities.get(0);
-		}
 		return entity;
 	}
 
@@ -216,7 +190,7 @@ public class JpaBaseDao<E, K> implements Dao<E, K>
 		criteria.select(root);
 		if (order != null)
 		{
-			List<Order> ordering = new LinkedList<>();
+			List<Order> ordering = new LinkedList<Order>();
 			for (SingularAttribute<E, ?> field : order)
 			{
 				ordering.add(builder.asc(root.get(field)));
@@ -255,17 +229,13 @@ public class JpaBaseDao<E, K> implements Dao<E, K>
 		Root<E> root = criteria.from(entityClass);
 		criteria.select(root);
 
-		List<Order> ordering = new LinkedList<>();
+		List<Order> ordering = new LinkedList<Order>();
 		for (SingularAttribute<E, ?> field : order)
 		{
 			if (sortAscending[ordering.size()] == true)
-			{
 				ordering.add(builder.asc(root.get(field)));
-			}
 			else
-			{
 				ordering.add(builder.desc(root.get(field)));
-			}
 
 		}
 		criteria.orderBy(ordering);
@@ -276,11 +246,16 @@ public class JpaBaseDao<E, K> implements Dao<E, K>
 
 	}
 
-	public <V> E findOneByAttribute(SingularAttribute<? super E, V> vKey, V value)
+	public <V> E findOneByAttribute(SingularAttribute<E, V> vKey, V value)
 	{
-		JpaDslBuilder<E> q = select();
-		return q.where(q.eq(vKey, value)).getSingleResultOrNull();
+		E ret = null;
+		List<E> results = findAllByAttribute(vKey, value, null, 1);
+		if (results.size() > 0)
+		{
+			ret = results.get(0);
+		}
 
+		return ret;
 	}
 
 	public <V, SK> List<E> findAllByAttribute(SingularAttribute<E, V> vKey, V value, SingularAttribute<E, SK> order)
@@ -466,8 +441,8 @@ public class JpaBaseDao<E, K> implements Dao<E, K>
 
 	public JPAContainer<E> createVaadinContainer()
 	{
-		JPAContainer<E> container = new JPAContainer<>(entityClass);
-		container.setEntityProvider(new BatchingPerRequestEntityProvider<>(entityClass));
+		JPAContainer<E> container = new JPAContainer<E>(entityClass);
+		container.setEntityProvider(new BatchingPerRequestEntityProvider<E>(entityClass));
 		return container;
 
 	}
@@ -480,7 +455,7 @@ public class JpaBaseDao<E, K> implements Dao<E, K>
 		boolean detachedEntities = true;
 		String propertyId = getIdField().getName();
 		boolean applicationManagedTransactions = true;
-		EntityContainer<E> entityContainer = new EntityContainer<>(em, entityClass, propertyId, Integer.MAX_VALUE,
+		EntityContainer<E> entityContainer = new EntityContainer<E>(em, entityClass, propertyId, Integer.MAX_VALUE,
 				applicationManagedTransactions, detachedEntities, compositeItmes);
 
 		for (Attribute<? super E, ?> attrib : getIdField().getDeclaringType().getAttributes())
@@ -518,7 +493,7 @@ public class JpaBaseDao<E, K> implements Dao<E, K>
 				return Math.min(sizeLimit, size);
 			}
 		};
-		container.setEntityProvider(new BatchingPerRequestEntityProvider<>(entityClass));
+		container.setEntityProvider(new BatchingPerRequestEntityProvider<E>(entityClass));
 		return container;
 
 	}
@@ -554,7 +529,7 @@ public class JpaBaseDao<E, K> implements Dao<E, K>
 
 	}
 
-	public <V> int deleteAllByAttribute(SingularAttribute<? super E, V> vKey, V value)
+	public <V> int deleteAllByAttribute(SingularAttribute<E, V> vKey, V value)
 	{
 
 		CriteriaBuilder builder = getEntityManager().getCriteriaBuilder();
@@ -618,13 +593,9 @@ public class JpaBaseDao<E, K> implements Dao<E, K>
 		Table annotation = entityClass.getAnnotation(Table.class);
 		String tableName;
 		if (annotation != null)
-		{
 			tableName = annotation.name();
-		}
 		else
-		{
 			tableName = entityName;
-		}
 
 		String qry = "select count(" + entityName + ") from " + tableName + " " + entityName;
 		Query query = getEntityManager().createQuery(qry);
@@ -655,34 +626,19 @@ public class JpaBaseDao<E, K> implements Dao<E, K>
 		return new FindBuilder();
 	}
 
-	public JpaDslBuilder<E> select()
+	public JpaDslBuilder<E> find()
 	{
-		return new JpaDslBuilder<>(entityClass);
+		return new JpaDslBuilder<E>(entityClass);
 	}
-
-	public JpaDslTupleBuilder<E> selectTuple()
+	
+	public JpaDslTupleBuilder<E> findTuple()
 	{
-		return new JpaDslTupleBuilder<>(entityClass);
+		return new JpaDslTupleBuilder<E>(entityClass);
 	}
 
 	public JpaDslBuilder<E> jpaContainerDelegate(CriteriaQuery<E> criteria)
 	{
-		return new JpaDslBuilder<>(criteria, entityClass);
-	}
-
-	@SuppressWarnings("unchecked")
-	public <M extends BaseCrudEntity> M findByEntityId(M entity)
-	{
-		if (entity.getId() != null)
-		{
-			// lookup by id
-			return (M) getEntityManager().find(entityClass, entity.getId());
-		}
-
-		// lookup by guid
-		JpaDslBuilder<M> q = (JpaDslBuilder<M>) select();
-		return q.where(q.eq(BaseCrudEntity_.guid, entity.getGuid())).getSingleResultOrNull();
-
+		return new JpaDslBuilder<E>(criteria, entityClass);
 	}
 
 	public class FindBuilder
@@ -917,15 +873,7 @@ public class JpaBaseDao<E, K> implements Dao<E, K>
 			return builder.isNull(root.get(field));
 
 		}
+
 	}
 
-	public List<E> getEntities(final int startIndex)
-	{
-		return getGenericDao(entityClass).select().startPosition(startIndex).getResultList();
-	}
-
-	public int getEntityCount()
-	{
-		return getGenericDao(entityClass).select().count().intValue();
-	}
 }

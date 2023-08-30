@@ -8,6 +8,7 @@ import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.google.common.base.Preconditions;
@@ -65,8 +66,6 @@ import elemental.json.JsonObject;
  */
 class JasperReportLayout extends VerticalLayout
 {
-	private static final int MAX_FILENAME_LENGTH = 100;
-
 	/**
 	 *
 	 */
@@ -74,7 +73,7 @@ class JasperReportLayout extends VerticalLayout
 
 	public static final String NAME = "ReportView";
 
-	static private final transient Logger logger = org.apache.logging.log4j.LogManager.getLogger();
+	static private final transient Logger logger = LogManager.getLogger();
 
 	private static final String PRINT_PANEL_ID = "nj-print-panel-id-for-pdf";
 
@@ -220,7 +219,7 @@ class JasperReportLayout extends VerticalLayout
 
 					JsonObject params = arguments.getObject(1);
 
-					List<ReportParameter<?>> subFilters = new LinkedList<>();
+					List<ReportParameter<?>> subFilters = new LinkedList<ReportParameter<?>>();
 
 					boolean insitue = false;
 					String[] itr = params.keys();
@@ -232,7 +231,7 @@ class JasperReportLayout extends VerticalLayout
 						}
 						else
 						{
-							subFilters.add(new ReportParameterConstant<>(key, params.getString(key), key,
+							subFilters.add(new ReportParameterConstant<String>(key, params.getString(key), key,
 									params.getString(key)));
 						}
 					}
@@ -396,9 +395,7 @@ class JasperReportLayout extends VerticalLayout
 		// images isn't found in the above templates directory
 		// then search in the /images/seanau director.
 		if (path == null || !new File(path).exists())
-		{
 			path = VaadinServlet.getCurrent().getServletContext().getRealPath("/images/seanau/");
-		}
 		String targetFileName = baseIconFileName + "-" + count + ".png";
 		iconBuilder.buildLogo(count.intValue(), new File(path), baseIconFileName + ".png", targetFileName);
 
@@ -657,25 +654,22 @@ class JasperReportLayout extends VerticalLayout
 			private String exportFileName(final JasperManager.OutputFormat outputFormat)
 			{
 				SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss");
-				String name = reportProperties.getReportTitle() + "At" + sdf.format(new Date());
+				String name = reportProperties.getReportTitle() + "at" + sdf.format(new Date());
 				for (ReportParameter<?> param : builder.getReportParameters())
 				{
 					if (param.showFilter())
 					{
-						name += "-" + param.getLabel("");
+						name += "-" + param.getLabel();
 						for (String parameterName : param.getParameterNames())
 						{
 							name += "-" + param.getDisplayValue(parameterName);
+
 						}
 					}
 				}
-				if (name.length() > MAX_FILENAME_LENGTH)
-				{
-					name = name.substring(0, MAX_FILENAME_LENGTH);
-				}
-				name = name.replace("/", "-");
 
 				return name + outputFormat.getFileExtension();
+
 			}
 		});
 
@@ -709,13 +703,7 @@ class JasperReportLayout extends VerticalLayout
 			{
 				try
 				{
-					InputStream stream = manager.getStream();
-					if (stream == null)
-					{
-						Notification.show("Couldn't attach to stream, if you cancelled a report this is normal",
-								Type.ERROR_MESSAGE);
-					}
-					return stream;
+					return manager.getStream();
 				}
 				catch (InterruptedException e)
 				{

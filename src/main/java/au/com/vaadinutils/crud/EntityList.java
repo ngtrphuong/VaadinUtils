@@ -53,6 +53,4 @@ public interface EntityList<E> extends Component
 	public void setColumnReorderingAllowed(boolean b);
 	
 	public boolean isColumnReorderingAllowed();
-
-    Object prevVisibleItemId(Object itemId);
 }

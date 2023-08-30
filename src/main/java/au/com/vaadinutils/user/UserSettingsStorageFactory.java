@@ -2,7 +2,7 @@ package au.com.vaadinutils.user;
 
 public class UserSettingsStorageFactory
 {
-	// Logger logger = org.apache.logging.log4j.LogManager.getLogger();
+	// Logger logger = LogManager.getLogger();
 
 	static UserSettingsStorage storage = new UserSettingsStorageNoOpImpl();
 

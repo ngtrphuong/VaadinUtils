@@ -4,21 +4,17 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import au.com.vaadinutils.errorHandling.ErrorWindow;
 
 import com.vaadin.addon.jpacontainer.EntityItem;
 import com.vaadin.addon.jpacontainer.JPAContainer;
 import com.vaadin.data.Property;
 import com.vaadin.data.util.converter.Converter;
-import com.vaadin.event.ItemClickEvent;
-import com.vaadin.event.ItemClickEvent.ItemClickListener;
-import com.vaadin.shared.MouseEventDetails.MouseButton;
 import com.vaadin.ui.Table;
 import com.vaadin.ui.themes.ValoTheme;
-
-import org.apache.logging.log4j.LogManager;
-
-import au.com.vaadinutils.errorHandling.ErrorWindow;
 
 public class EntityTable<E> extends Table implements EntityList<E>
 {
@@ -26,48 +22,30 @@ public class EntityTable<E> extends Table implements EntityList<E>
 	private static final long serialVersionUID = 1L;
 	private JPAContainer<E> entityContainer;
 	private RowChangeListener<E> rowChangeListener;
-	private HeadingPropertySet columnConfiguration;
+	private HeadingPropertySet<E> columnConfiguration;
 
 	transient Logger logger = LogManager.getLogger(EntityTable.class);
 
-	public EntityTable(JPAContainer<E> entityContainer, HeadingPropertySet headingPropertySet)
+	public EntityTable(JPAContainer<E> entityContainer, HeadingPropertySet<E> headingPropertySet)
 	{
 		this.entityContainer = entityContainer;
 		this.columnConfiguration = headingPropertySet;
 		addStyleName(ValoTheme.TABLE_COMPACT);
 		this.setContainerDataSource(entityContainer);
-		addRightClickSelect();
 
 	}
 
-	@Override
-	public Object prevVisibleItemId(Object itemId)
-	{
-		Object prev = null;
-		for (Object id : getVisibleItemIds())
-		{
-			if (id.equals(itemId))
-			{
-				return prev;
-			}
-			prev = id;
-
-		}
-		return prev;
-	}
-
-	@Override
 	public void setRowChangeListener(RowChangeListener<E> rowChangeListener)
 	{
 		this.rowChangeListener = rowChangeListener;
 	}
 
 	/**
+	 * 
 	 * @param uniqueTableId
 	 *            -an id for this layout/table combination, it is used to
 	 *            identify stored column settings in a key value map
 	 */
-	@Override
 	public void init(String uniqueTableId)
 	{
 
@@ -98,9 +76,7 @@ public class EntityTable<E> extends Table implements EntityList<E>
 							EntityTable.this.rowChangeListener.rowChanged(entity);
 						}
 						else
-						{
 							EntityTable.this.rowChangeListener.rowChanged(null);
-						}
 					}
 					else
 					{
@@ -123,9 +99,10 @@ public class EntityTable<E> extends Table implements EntityList<E>
 
 	/**
 	 * Hooking this allows us to veto the user selecting a new row. if there is
-	 * a rowChangeListener we will prevent the row change. it's up to the
-	 * listener to callback on superChangeVariables to perform the row change if
-	 * row change should be allowed.
+	 * a rowChangeListener we will prevent the row change.
+	 * 
+	 * it's up to the listener to callback on superChangeVariables to perform
+	 * the row change if row change should be allowed.
 	 */
 	@Override
 	public void changeVariables(final Object source, final Map<String, Object> variables)
@@ -153,9 +130,7 @@ public class EntityTable<E> extends Table implements EntityList<E>
 				}
 			}
 			else
-			{
 				super.changeVariables(source, variables);
-			}
 		}
 		catch (Exception e)
 		{
@@ -163,7 +138,6 @@ public class EntityTable<E> extends Table implements EntityList<E>
 		}
 	}
 
-	@Override
 	public EntityItem<E> getCurrent()
 	{
 		Object entityId = this.getValue();
@@ -206,6 +180,7 @@ public class EntityTable<E> extends Table implements EntityList<E>
 
 	/**
 	 * This nasty piece of work exists to stop the following exception being
+	 * 
 	 * thrown. java.lang.IllegalArgumentException: wrong number of arguments
 	 * sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
 	 * sun.reflect.NativeMethodAccessorImpl
@@ -232,6 +207,7 @@ public class EntityTable<E> extends Table implements EntityList<E>
 	 * com.vaadin.ui.Table.setContainerDataSource(Table.java:2712)
 	 * com.vaadin.ui.Table.setContainerDataSource(Table.java:2653)
 	 * au.org.scoutmaster.views.ContactTable.init(ContactTable.java:46)
+	 * 
 	 */
 	@Override
 	protected String formatPropertyValue(Object rowId, Object colId, Property<?> property)
@@ -306,26 +282,5 @@ public class EntityTable<E> extends Table implements EntityList<E>
 		{
 			select(itemId);
 		}
-	}
-
-	/**
-	 * Adds a listener to select the right clicked item in the table. This is
-	 * needed by ContextMenus.
-	 */
-	private void addRightClickSelect()
-	{
-		this.addItemClickListener(new ItemClickListener()
-		{
-			private static final long serialVersionUID = 1L;
-
-			@Override
-			public void itemClick(ItemClickEvent event)
-			{
-				if (event.getButton() == MouseButton.RIGHT)
-				{
-					EntityTable.this.setValue(event.getItemId());
-				}
-			}
-		});
 	}
 }

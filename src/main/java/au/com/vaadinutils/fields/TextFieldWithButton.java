@@ -1,35 +1,78 @@
 package au.com.vaadinutils.fields;
 
-import com.vaadin.ui.AbstractField;
+import com.vaadin.addon.jpacontainer.EntityItemProperty;
+import com.vaadin.server.Resource;
 import com.vaadin.ui.Button;
+import com.vaadin.ui.Button.ClickListener;
+import com.vaadin.ui.CustomComponent;
+import com.vaadin.ui.HorizontalLayout;
 import com.vaadin.ui.TextField;
 
 @SuppressWarnings("serial")
-public class TextFieldWithButton extends FieldWithButton<String>
+public class TextFieldWithButton extends CustomComponent
 {
-	public TextFieldWithButton(final String caption)
+	private TextField textField;
+	private Button button;
+
+	public TextFieldWithButton(String caption)
 	{
-		super(caption, null);
+		final HorizontalLayout layout = new HorizontalLayout();
+		layout.setSizeFull();
+		layout.setSpacing(true);
+		textField = new TextField();
+		textField.setSizeFull();
+		layout.addComponent(textField);
+		layout.setExpandRatio(textField, 1);
+		button = new Button();
+		layout.addComponent(button);
+
+		setCompositionRoot(layout);
+		setCaption(caption);
 	}
 
-	public TextFieldWithButton(final String caption, final Button button)
+	public void setPropertyDataSource(EntityItemProperty newDataSource)
 	{
-		super(caption, button);
+		textField.setPropertyDataSource(newDataSource);
 	}
 
-	@Override
-	protected AbstractField<String> createField()
+	public void setNullRepresentation(String nullRepresentation)
 	{
-		return new TextField();
+		textField.setNullRepresentation(nullRepresentation);
+	}
+	
+	public void setButtonCaption(String caption)
+	{
+		button.setCaption(caption);
+	}
+	
+	public void setButtonIcon(Resource icon)
+	{
+		button.setIcon(icon);
 	}
 
-	public void setNullRepresentation(final String nullRepresentation)
+	public String getValue()
 	{
-		((TextField) field).setNullRepresentation(nullRepresentation);
+		return textField.getValue();
 	}
-
-	public void setNullSettingAllowed(final boolean nullSettingAllowed)
+	
+	public void addButtonClickListener(ClickListener listener)
 	{
-		((TextField) field).setNullSettingAllowed(nullSettingAllowed);
+		button.addClickListener(listener);
 	}
+	
+	public void setButtonDescription(String description)
+	{
+		button.setDescription(description);
+	}
+	
+	public void setReadOnly(boolean readOnly)
+	{
+		textField.setReadOnly(readOnly);
+	}
+	
+	public void setButtonEnabled(boolean enabled)
+	{
+		button.setEnabled(enabled);
+	}
+	
 }

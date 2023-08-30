@@ -20,11 +20,31 @@ import javax.persistence.metamodel.SingularAttribute;
 import javax.validation.ConstraintViolation;
 import javax.validation.ConstraintViolationException;
 
-import org.apache.commons.lang.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.vaadin.addons.lazyquerycontainer.EntityContainer;
-import org.vaadin.ui.LegacyComboBox;
+
+import au.com.vaadinutils.converter.ContainerAdaptor;
+import au.com.vaadinutils.converter.ContainerAdaptorFactory;
+import au.com.vaadinutils.converter.MultiSelectConverter;
+import au.com.vaadinutils.crud.splitFields.SplitCheckBox;
+import au.com.vaadinutils.crud.splitFields.SplitColorPicker;
+import au.com.vaadinutils.crud.splitFields.SplitComboBox;
+import au.com.vaadinutils.crud.splitFields.SplitDateField;
+import au.com.vaadinutils.crud.splitFields.SplitEditorField;
+import au.com.vaadinutils.crud.splitFields.SplitLabel;
+import au.com.vaadinutils.crud.splitFields.SplitListSelect;
+import au.com.vaadinutils.crud.splitFields.SplitPasswordField;
+import au.com.vaadinutils.crud.splitFields.SplitTextArea;
+import au.com.vaadinutils.crud.splitFields.SplitTextField;
+import au.com.vaadinutils.crud.splitFields.SplitTwinColSelect;
+import au.com.vaadinutils.dao.JpaBaseDao;
+import au.com.vaadinutils.domain.iColor;
+import au.com.vaadinutils.domain.iColorFactory;
+import au.com.vaadinutils.fields.CKEditorEmailField;
+import au.com.vaadinutils.fields.CKEditorEmailField.ConfigModifier;
+import au.com.vaadinutils.fields.ColorPickerField;
+import au.com.vaadinutils.fields.DataBoundButton;
 
 import com.google.common.base.Preconditions;
 import com.vaadin.addon.jpacontainer.JPAContainer;
@@ -50,39 +70,15 @@ import com.vaadin.ui.Label;
 import com.vaadin.ui.Notification;
 import com.vaadin.ui.Notification.Type;
 import com.vaadin.ui.PasswordField;
-import com.vaadin.ui.Slider;
 import com.vaadin.ui.TextArea;
 import com.vaadin.ui.TextField;
 
-import au.com.vaadinutils.converter.ContainerAdaptor;
-import au.com.vaadinutils.converter.ContainerAdaptorFactory;
-import au.com.vaadinutils.converter.MultiSelectConverter;
-import au.com.vaadinutils.crud.splitFields.SplitCheckBox;
-import au.com.vaadinutils.crud.splitFields.SplitColorPicker;
-import au.com.vaadinutils.crud.splitFields.SplitComboBox;
-import au.com.vaadinutils.crud.splitFields.SplitDateField;
-import au.com.vaadinutils.crud.splitFields.SplitEditorField;
-import au.com.vaadinutils.crud.splitFields.SplitLabel;
-import au.com.vaadinutils.crud.splitFields.SplitListSelect;
-import au.com.vaadinutils.crud.splitFields.SplitPasswordField;
-import au.com.vaadinutils.crud.splitFields.SplitTextArea;
-import au.com.vaadinutils.crud.splitFields.SplitTextField;
-import au.com.vaadinutils.crud.splitFields.SplitTwinColSelect;
-import au.com.vaadinutils.crud.splitFields.legacy.LegacySplitComboBox;
-import au.com.vaadinutils.dao.JpaBaseDao;
-import au.com.vaadinutils.domain.iColor;
-import au.com.vaadinutils.domain.iColorFactory;
-import au.com.vaadinutils.fields.CKEditorEmailField;
-import au.com.vaadinutils.fields.CKEditorEmailField.ConfigModifier;
-import au.com.vaadinutils.fields.ColorPickerField;
-import au.com.vaadinutils.fields.DataBoundButton;
-
-public class FormHelper<E> implements Serializable
+public class FormHelper<E extends CrudEntity> implements Serializable
 {
 	private static final long serialVersionUID = 1L;
 	public static final String STANDARD_COMBO_WIDTH = "220";
 
-	ArrayList<AbstractComponent> fieldList = new ArrayList<>();
+	ArrayList<AbstractComponent> fieldList = new ArrayList<AbstractComponent>();
 	private AbstractLayout form;
 	private ValidatingFieldGroup<E> group;
 	private Set<ValueChangeListener> valueChangeListeners = new LinkedHashSet<>();
@@ -191,7 +187,7 @@ public class FormHelper<E> implements Serializable
 		field.setImmediate(true);
 		field.setNullRepresentation("");
 		field.setNullSettingAllowed(false);
-		field.setId(fieldLabel.replace(" ", ""));
+		field.setId(fieldLabel);
 		addValueChangeListeners(field);
 		doBinding(group, fieldName, field);
 		form.addComponent(field);
@@ -204,13 +200,13 @@ public class FormHelper<E> implements Serializable
 
 		HorizontalLayout layout = new HorizontalLayout();
 		layout.setSizeFull();
-
+		
 		TextField field = new SplitTextField(fieldLabel);
 		field.setWidth("100%");
 		field.setImmediate(true);
 		field.setNullRepresentation("");
 		field.setNullSettingAllowed(false);
-		field.setId(fieldLabel.replace(" ", ""));
+		field.setId(fieldLabel);
 		addValueChangeListeners(field);
 		doBinding(group, fieldName, field);
 
@@ -218,7 +214,7 @@ public class FormHelper<E> implements Serializable
 		layout.addComponent(button);
 
 		layout.setExpandRatio(field, 2);
-
+		
 		form.addComponent(layout);
 
 		return field;
@@ -227,9 +223,7 @@ public class FormHelper<E> implements Serializable
 	public void doBinding(FieldGroup group, String fieldName, @SuppressWarnings("rawtypes") Field field)
 	{
 		if (group != null)
-		{
 			group.bind(field, fieldName);
-		}
 		else
 
 		{
@@ -259,7 +253,7 @@ public class FormHelper<E> implements Serializable
 		field.setImmediate(true);
 		field.setNullRepresentation("");
 		field.setNullSettingAllowed(false);
-		field.setId(fieldLabel.replace(" ", ""));
+		field.setId(fieldLabel);
 		addValueChangeListeners(field);
 		doBinding(group, fieldName, field);
 		form.addComponent(field);
@@ -274,7 +268,7 @@ public class FormHelper<E> implements Serializable
 		return field;
 	}
 
-	public TextArea bindTextAreaField(String fieldLabel, SingularAttribute<? super E, String> attribute, int rows)
+	public TextArea bindTextAreaField(String fieldLabel, SingularAttribute<E, String> attribute, int rows)
 	{
 		TextArea field = bindTextAreaField(form, group, fieldLabel, attribute.getName(), rows);
 		this.fieldList.add(field);
@@ -317,15 +311,7 @@ public class FormHelper<E> implements Serializable
 		return field;
 	}
 
-	public DateField bindDateField(String label, String member, String dateFormat, Resolution resolution)
-	{
-		DateField field = bindDateField(form, group, label, member, dateFormat, resolution);
-		field.setWidth(STANDARD_COMBO_WIDTH);
-		this.fieldList.add(field);
-		return field;
-	}
-
-	public DateField bindDateField(String label, SingularAttribute<? super E, Date> member, String dateFormat,
+	public DateField bindDateField(String label, SingularAttribute<E, Date> member, String dateFormat,
 			Resolution resolution)
 	{
 		DateField field = bindDateField(form, group, label, member.getName(), dateFormat, resolution);
@@ -418,10 +404,8 @@ public class FormHelper<E> implements Serializable
 		field.setNullSelectionAllowed(false);
 		field.setTextInputAllowed(true);
 		field.setWidth(STANDARD_COMBO_WIDTH);
-		field.setPopupWidth("100%");
-
 		field.setImmediate(true);
-		field.setId(fieldLabel.replace(" ", ""));
+		field.setId(fieldLabel);
 		addValueChangeListeners(field);
 		doBinding(group, fieldName, field);
 
@@ -494,38 +478,6 @@ public class FormHelper<E> implements Serializable
 		field.setNullSelectionAllowed(false);
 		field.setTextInputAllowed(true);
 		field.setWidth(STANDARD_COMBO_WIDTH);
-		field.setPopupWidth("100%");
-		field.setImmediate(true);
-		form.addComponent(field);
-		addValueChangeListeners(field);
-		doBinding(group, fieldName, field);
-		return field;
-	}
-
-	public <L> ComboBox bindComboBox(AbstractLayout form, ValidatingFieldGroup<E> fieldGroup, String fieldName,
-			String fieldLabel, Container options)
-	{
-		ComboBox field = new SplitComboBox(fieldLabel, options);
-		field.setNewItemsAllowed(false);
-		field.setNullSelectionAllowed(false);
-		field.setTextInputAllowed(true);
-		field.setWidth(STANDARD_COMBO_WIDTH);
-		field.setPopupWidth("100%");
-		field.setImmediate(true);
-		form.addComponent(field);
-		addValueChangeListeners(field);
-		doBinding(group, fieldName, field);
-		return field;
-	}
-
-	public <L> LegacyComboBox bindLegacyComboBox(AbstractLayout form, ValidatingFieldGroup<E> fieldGroup,
-			String fieldName, String fieldLabel, Collection<?> options)
-	{
-		LegacyComboBox field = new LegacySplitComboBox(fieldLabel, options);
-		field.setNewItemsAllowed(false);
-		field.setNullSelectionAllowed(false);
-		field.setTextInputAllowed(true);
-		field.setWidth(STANDARD_COMBO_WIDTH);
 		field.setImmediate(true);
 		form.addComponent(field);
 		addValueChangeListeners(field);
@@ -534,7 +486,7 @@ public class FormHelper<E> implements Serializable
 	}
 
 	public <L extends CrudEntity, K> ComboBox bindEntityField(String fieldLabel, SingularAttribute<E, L> fieldName,
-			SingularAttribute<? super L, K> listFieldName)
+			SingularAttribute<L, K> listFieldName)
 	{
 		return new EntityFieldBuilder<L>().setLabel(fieldLabel).setField(fieldName).setListFieldName(listFieldName)
 				.build();
@@ -665,8 +617,7 @@ public class FormHelper<E> implements Serializable
 	 * FormHelper&lt;RaffleBook&gt; helper = new
 	 * FormHelper&lt;RaffleBook&gt;(...);<br>
 	 * <br>
-	 * ComboBox field = helper.new
-	 * EntityFieldBuilder&lt;RaffleAllocation&gt;()<br>
+	 * ComboBox field = helper.new EntityFieldBuilder&lt;RaffleAllocation&gt;()<br>
 	 * .setLabel("Action")<br>
 	 * .setField(RaffleBook.allocation)<br>
 	 * .setListFieldName(RaffleAllocation_.name)<br>
@@ -691,6 +642,7 @@ public class FormHelper<E> implements Serializable
 
 		public ComboBox build()
 		{
+			Preconditions.checkNotNull(label, "Label may not be null");
 			Preconditions.checkNotNull(listField, "ListField may not be null");
 			Preconditions.checkArgument(group == null || field != null, "Field may not be null");
 			if (builderForm == null)
@@ -703,12 +655,9 @@ public class FormHelper<E> implements Serializable
 			{
 				component = new SplitComboBox(label);
 			}
+			component.setCaption(label);
 			component.setItemCaptionMode(ItemCaptionMode.PROPERTY);
-			if (label != null)
-			{
-				component.setCaption(label);
-				component.setId(label.replace(" ", ""));
-			}
+			component.setId(label);
 
 			if (container == null)
 			{
@@ -724,37 +673,31 @@ public class FormHelper<E> implements Serializable
 
 			ContainerAdaptor<L> adaptor = ContainerAdaptorFactory.getAdaptor(container);
 			if (adaptor.getSortableContainerPropertyIds().contains(listField))
-			{
 				adaptor.sort(new String[]
 				{ listField }, new boolean[]
 				{ true });
-			}
 
 			component.setItemCaptionPropertyId(listField);
 			component.setContainerDataSource(container);
-			SingleSelectConverter<L> converter = new SingleSelectConverter<>(component);
+			SingleSelectConverter<L> converter = new SingleSelectConverter<L>(component);
 			component.setConverter(converter);
 			component.setNewItemsAllowed(false);
 			component.setNullSelectionAllowed(false);
 			component.setTextInputAllowed(true);
 			component.setWidth(STANDARD_COMBO_WIDTH);
-			component.setPopupWidth("100%");
 			component.setImmediate(true);
 			addValueChangeListeners(component);
 			if (group != null)
 			{
 				Collection<? extends Object> ids = null;
 				if (group.getContainer() != null)
-				{
-					ids = group.getContainer().getContainerPropertyIds();
-				}
-				else if (group.getItemDataSource() != null)
-				{
-					ids = group.getItemDataSource().getItemPropertyIds();
-				}
 
-				Preconditions.checkNotNull(ids,
-						"The group must have either a Container or an ItemDataSource attached.");
+					ids = group.getContainer().getContainerPropertyIds();
+				else if (group.getItemDataSource() != null)
+					ids = group.getItemDataSource().getItemPropertyIds();
+
+				Preconditions
+						.checkNotNull(ids, "The group must have either a Container or an ItemDataSource attached.");
 
 				Preconditions.checkState(ids.contains(field),
 						field + " is not valid, valid listFieldNames are " + ids.toString());
@@ -801,7 +744,7 @@ public class FormHelper<E> implements Serializable
 			return this;
 		}
 
-		public EntityFieldBuilder<L> setField(SingularAttribute<? super E, L> field)
+		public EntityFieldBuilder<L> setField(SingularAttribute<E, L> field)
 		{
 			this.field = field.getName();
 			listClazz = field.getJavaType();
@@ -815,7 +758,7 @@ public class FormHelper<E> implements Serializable
 			return this;
 		}
 
-		public EntityFieldBuilder<L> setListFieldName(SingularAttribute<? super L, ?> listField)
+		public EntityFieldBuilder<L> setListFieldName(SingularAttribute<L, ?> listField)
 		{
 			this.listField = listField.getName();
 			return this;
@@ -835,8 +778,10 @@ public class FormHelper<E> implements Serializable
 
 		public EntityFieldBuilder<L> setListClass(Class<L> listClazz)
 		{
-			Preconditions.checkState(this.listClazz == null,
-					"As you have set the field as a singularAttribute, the listClass is set automatically so there is no need to call setListClass.");
+			Preconditions
+					.checkState(
+							this.listClazz == null,
+							"As you have set the field as a singularAttribute, the listClass is set automatically so there is no need to call setListClass.");
 			this.listClazz = listClazz;
 			return this;
 		}
@@ -861,7 +806,7 @@ public class FormHelper<E> implements Serializable
 	 * <br>
 	 * ListSelect sections = helper.new ListSelectBuilder<TblSection>()<br>
 	 * .setLabel("Sections")<br>
-	 * .setField(TblAdvertisementSize_.sections)<br>
+	 * .setField(TblAdvertisementSize_.tblSections)<br>
 	 * .setListFieldName("name")<br>
 	 * .setMultiSelect(true)<br>
 	 * .build(); <br>
@@ -913,11 +858,9 @@ public class FormHelper<E> implements Serializable
 					+ " is not valid, valid listFields are " + container.getContainerPropertyIds().toString());
 
 			if (container.getSortableContainerPropertyIds().contains(listField))
-			{
 				container.sort(new String[]
 				{ listField }, new boolean[]
 				{ true });
-			}
 
 			component.setContainerDataSource(container);
 
@@ -928,20 +871,20 @@ public class FormHelper<E> implements Serializable
 			}
 			else
 			{
-				SingleSelectConverter<L> converter = new SingleSelectConverter<>(component);
+				SingleSelectConverter<L> converter = new SingleSelectConverter<L>(component);
 				component.setConverter(converter);
 			}
 
 			component.setWidth("100%");
 			component.setImmediate(true);
 			component.setNullSelectionAllowed(false);
-			component.setId(label.replace(" ", ""));
+			component.setId(label);
 
 			if (group != null && field != null)
 			{
-				Preconditions.checkState(group.getContainer().getContainerPropertyIds().contains(field),
-						field + " is not valid, valid listFieldNames are "
-								+ group.getContainer().getContainerPropertyIds().toString());
+				Preconditions.checkState(group.getContainer().getContainerPropertyIds().contains(field), field
+						+ " is not valid, valid listFieldNames are "
+						+ group.getContainer().getContainerPropertyIds().toString());
 
 				doBinding(group, field, component);
 			}
@@ -1039,10 +982,9 @@ public class FormHelper<E> implements Serializable
 	 * FormHelper<TblAdvertisementSize> helper = new
 	 * FormHelper<TblAdvertisementSize>(...);<br>
 	 * <br>
-	 * TwinColSelect sections = helper.new
-	 * TwinColSelectBuilder<TblSection>()<br>
+	 * TwinColSelect sections = helper.new TwinColSelectBuilder<TblSection>()<br>
 	 * .setLabel("Sections")<br>
-	 * .setField(TblAdvertisementSize_.sections)<br>
+	 * .setField(TblAdvertisementSize_.tblSections)<br>
 	 * .setListFieldName("name")<br>
 	 * .setLeftColumnCaption("Available") .setRightColumnCaption("Selected")
 	 * .build(); <br>
@@ -1099,17 +1041,15 @@ public class FormHelper<E> implements Serializable
 
 			ContainerAdaptor<L> adaptor = ContainerAdaptorFactory.getAdaptor(container);
 			if (adaptor.getSortableContainerPropertyIds().contains(listField))
-			{
 				adaptor.sort(new String[]
 				{ listField }, new boolean[]
 				{ true });
-			}
 
 			component.setContainerDataSource(container);
 			component.setConverter(new MultiSelectConverter(component, Set.class));
 
 			component.setWidth("100%");
-			component.setId(label.replace(" ", ""));
+			component.setId(label);
 			component.setImmediate(true);
 			component.setNullSelectionAllowed(true);
 			component.setBuffered(true);
@@ -1117,9 +1057,9 @@ public class FormHelper<E> implements Serializable
 
 			if (group != null)
 			{
-				Preconditions.checkState(group.getContainer().getContainerPropertyIds().contains(field),
-						field + " is not valid, valid listFieldNames are "
-								+ group.getContainer().getContainerPropertyIds().toString());
+				Preconditions.checkState(group.getContainer().getContainerPropertyIds().contains(field), field
+						+ " is not valid, valid listFieldNames are "
+						+ group.getContainer().getContainerPropertyIds().toString());
 
 				doBinding(group, field, component);
 			}
@@ -1159,13 +1099,6 @@ public class FormHelper<E> implements Serializable
 		 * @return
 		 */
 		public TwinColSelectBuilder<L> setField(SetAttribute<E, L> field)
-		{
-			this.field = field.getName();
-			listClazz = field.getBindableJavaType();
-			return this;
-		}
-
-		public TwinColSelectBuilder<L> setField(ListAttribute<E, L> field)
 		{
 			this.field = field.getName();
 			listClazz = field.getBindableJavaType();
@@ -1302,18 +1235,17 @@ public class FormHelper<E> implements Serializable
 
 	public static Container createContainerFromEnumClass(String fieldName, Class<?> clazz)
 	{
-		LinkedHashMap<Enum<?>, String> enumMap = new LinkedHashMap<>();
+		LinkedHashMap<Enum<?>, String> enumMap = new LinkedHashMap<Enum<?>, String>();
 		for (Object enumConstant : clazz.getEnumConstants())
 		{
-			String label = StringUtils.capitalize(enumConstant.toString().toLowerCase().replace("_", " "));
-			enumMap.put((Enum<?>) enumConstant, label);
+			enumMap.put((Enum<?>) enumConstant, enumConstant.toString());
 		}
 
 		return createContainerFromMap(fieldName, enumMap);
 	}
 
 	@SuppressWarnings("unchecked")
-	static public IndexedContainer createContainerFromMap(String fieldName, Map<?, String> hashMap)
+	static public Container createContainerFromMap(String fieldName, Map<?, String> hashMap)
 	{
 		IndexedContainer container = new IndexedContainer();
 		container.addContainerProperty(fieldName, String.class, "");
@@ -1331,7 +1263,7 @@ public class FormHelper<E> implements Serializable
 
 	static public <Q extends CrudEntity> Container createContainerFromEntities(String fieldName, Collection<Q> list)
 	{
-		LinkedHashMap<Q, String> enumMap = new LinkedHashMap<>();
+		LinkedHashMap<Q, String> enumMap = new LinkedHashMap<Q, String>();
 
 		List<Q> sortedList = new LinkedList<>();
 		sortedList.addAll(list);
@@ -1393,10 +1325,10 @@ public class FormHelper<E> implements Serializable
 		return field;
 	}
 
-	public <M> DataBoundButton<M> bindButtonField(AbstractLayout form, ValidatingFieldGroup<E> group, String fieldLabel,
-			String fieldName, Class<M> type)
+	public <M> DataBoundButton<M> bindButtonField(AbstractLayout form, ValidatingFieldGroup<E> group,
+			String fieldLabel, String fieldName, Class<M> type)
 	{
-		DataBoundButton<M> field = new DataBoundButton<>(fieldLabel, type);
+		DataBoundButton<M> field = new DataBoundButton<M>(fieldLabel, type);
 
 		field.setImmediate(true);
 
@@ -1417,7 +1349,7 @@ public class FormHelper<E> implements Serializable
 		return field;
 	}
 
-	public <EN extends Enum<EN>> ComboBox bindEnumField(String fieldLabel, SingularAttribute<E, EN> fieldName)
+	public <EN> ComboBox bindEnumField(String fieldLabel, SingularAttribute<E, EN> fieldName)
 	{
 		return bindEnumField(fieldLabel, fieldName.getName(), fieldName.getBindableJavaType());
 
@@ -1425,7 +1357,7 @@ public class FormHelper<E> implements Serializable
 
 	public <J extends CrudEntity> FormHelper<E>.EntityFieldBuilder<J> getEntityFieldBuilder(Class<J> j)
 	{
-		return new EntityFieldBuilder<>();
+		return new EntityFieldBuilder<J>();
 
 	}
 
@@ -1439,9 +1371,6 @@ public class FormHelper<E> implements Serializable
 
 	}
 
-	/**
-	 * prefer to use the non static method getEntityFieldBuilder(Class<J> j)
-	 */
 	@SuppressWarnings(
 	{ "rawtypes", "unchecked" })
 	static public <J extends CrudEntity> FormHelper<?>.EntityFieldBuilder<J> getEntityFieldBuilder(AbstractLayout form,
@@ -1454,26 +1383,13 @@ public class FormHelper<E> implements Serializable
 
 	public <J extends CrudEntity> FormHelper<E>.TwinColSelectBuilder<J> getTwinColSelectBuilder(Class<J> j)
 	{
-		return new TwinColSelectBuilder<>();
+		return new TwinColSelectBuilder<J>();
 	}
 
 	public void addComponent(Component component)
 	{
 		form.addComponent(component);
 
-	}
-
-	public Slider bindSliderField(String fieldLabel, SingularAttribute<E, ? extends Number> fieldName, int min, int max)
-	{
-		Slider field = new Slider(fieldLabel, min, max);
-		field.setWidth("100%");
-		field.setImmediate(true);
-
-		field.setId(fieldLabel.replace(" ", ""));
-		addValueChangeListeners(field);
-		doBinding(group, fieldName.getName(), field);
-		form.addComponent(field);
-		return field;
 	}
 
 }

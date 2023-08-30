@@ -2,7 +2,6 @@ package au.com.vaadinutils.fields;
 
 import com.vaadin.addon.jpacontainer.EntityItemProperty;
 import com.vaadin.data.Property.ValueChangeListener;
-import com.vaadin.data.util.converter.Converter;
 import com.vaadin.server.Resource;
 import com.vaadin.ui.CustomComponent;
 import com.vaadin.ui.HorizontalLayout;
@@ -12,7 +11,7 @@ import com.vaadin.ui.TextField;
 @SuppressWarnings("serial")
 public class TextFieldWithLabel extends CustomComponent
 {
-	protected TextField textField;
+	private TextField textField;
 	private Label label;
 
 	public TextFieldWithLabel(String caption)
@@ -40,75 +39,40 @@ public class TextFieldWithLabel extends CustomComponent
 	{
 		textField.setNullRepresentation(nullRepresentation);
 	}
-
-	public void setNullSettingAllowed(final boolean nullSettingAllowed)
-	{
-		textField.setNullSettingAllowed(nullSettingAllowed);
-	}
-
+	
 	public void setLabelCaption(String caption)
 	{
 		label.setCaption(caption);
 	}
-
+	
 	public void setLabelIcon(Resource icon)
 	{
 		label.setIcon(icon);
-	}
-
-	public void setValue(final String newValue)
-	{
-		textField.setValue(newValue);
 	}
 
 	public String getValue()
 	{
 		return textField.getValue();
 	}
-
+	
 	public void setButtonDescription(String description)
 	{
 		label.setDescription(description);
 	}
-
-	@Override
+	
 	public void setReadOnly(boolean readOnly)
 	{
 		textField.setReadOnly(readOnly);
 	}
-
+	
 	public void setLabelReadOnly(boolean readOnly)
 	{
 		label.setReadOnly(readOnly);
 	}
-
+	
 	public void addValueChangeListener(ValueChangeListener listener)
 	{
 		textField.addValueChangeListener(listener);
 	}
-
-	public void setConverter(Class<?> datamodelType)
-	{
-		textField.setConverter(datamodelType);
-	}
-
-	public void setConverter(Converter<String, ?> converter)
-	{
-		textField.setConverter(converter);
-	}
-
-	public Object getConvertedValue()
-	{
-		return textField.getConvertedValue();
-	}
-
-	public void setConvertedValue(Object value)
-	{
-		textField.setConvertedValue(value);
-	}
-
-	public TextField getTextField()
-	{
-		return textField;
-	}
+	
 }

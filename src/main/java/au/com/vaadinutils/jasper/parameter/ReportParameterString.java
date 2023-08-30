@@ -1,16 +1,17 @@
 package au.com.vaadinutils.jasper.parameter;
 
+import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import au.com.vaadinutils.jasper.scheduler.entities.DateParameterType;
 
 import com.vaadin.data.Validator;
 import com.vaadin.ui.Component;
 import com.vaadin.ui.TextField;
 
-import au.com.vaadinutils.jasper.scheduler.entities.DateParameterType;
-
 public class ReportParameterString extends ReportParameter<String>
 {
-	Logger logger = org.apache.logging.log4j.LogManager.getLogger();
+	Logger logger = LogManager.getLogger();
 
 	protected TextField field;
 

@@ -5,7 +5,6 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.sql.Connection;
@@ -21,26 +20,27 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
 import javax.activation.DataSource;
-import javax.mail.util.ByteArrayDataSource;
 
+import org.apache.commons.mail.ByteArrayDataSource;
+import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import com.google.common.base.Preconditions;
+import com.google.gwt.thirdparty.guava.common.base.Preconditions;
 import com.vaadin.server.Page;
 import com.vaadin.server.VaadinServlet;
 import com.vaadin.server.WrappedSession;
 import com.vaadin.ui.UI;
-
-import org.apache.logging.log4j.LogManager;
 
 import au.com.vaadinutils.jasper.parameter.ReportChooser;
 import au.com.vaadinutils.jasper.parameter.ReportParameter;
 import au.com.vaadinutils.jasper.servlet.VaadinJasperPrintServlet;
 import au.com.vaadinutils.jasper.ui.CleanupCallback;
 import au.com.vaadinutils.jasper.ui.JasperReportProperties;
+import net.sf.jasperreports.engine.JRAbstractExporter;
 import net.sf.jasperreports.engine.JRBand;
 import net.sf.jasperreports.engine.JRElement;
 import net.sf.jasperreports.engine.JRException;
+import net.sf.jasperreports.engine.JRExporterParameter;
 import net.sf.jasperreports.engine.JRParameter;
 import net.sf.jasperreports.engine.JRStaticText;
 import net.sf.jasperreports.engine.JRTextField;
@@ -54,10 +54,10 @@ import net.sf.jasperreports.engine.design.JRDesignParameter;
 import net.sf.jasperreports.engine.design.JRDesignStaticText;
 import net.sf.jasperreports.engine.design.JRDesignTextField;
 import net.sf.jasperreports.engine.design.JasperDesign;
-import net.sf.jasperreports.engine.export.HtmlExporter;
-import net.sf.jasperreports.engine.export.HtmlResourceHandler;
 import net.sf.jasperreports.engine.export.JRCsvExporter;
 import net.sf.jasperreports.engine.export.JRExportProgressMonitor;
+import net.sf.jasperreports.engine.export.JRHtmlExporter;
+import net.sf.jasperreports.engine.export.JRHtmlExporterParameter;
 import net.sf.jasperreports.engine.export.JRPdfExporter;
 import net.sf.jasperreports.engine.fill.FillListener;
 import net.sf.jasperreports.engine.fill.JRSwapFileVirtualizer;
@@ -67,28 +67,16 @@ import net.sf.jasperreports.engine.type.VerticalAlignEnum;
 import net.sf.jasperreports.engine.type.WhenNoDataTypeEnum;
 import net.sf.jasperreports.engine.util.JRLoader;
 import net.sf.jasperreports.engine.util.JRSwapFile;
-import net.sf.jasperreports.export.CsvReportConfiguration;
-import net.sf.jasperreports.export.HtmlReportConfiguration;
-import net.sf.jasperreports.export.PdfReportConfiguration;
-import net.sf.jasperreports.export.SimpleCsvReportConfiguration;
-import net.sf.jasperreports.export.SimpleExporterInput;
-import net.sf.jasperreports.export.SimpleHtmlExporterOutput;
-import net.sf.jasperreports.export.SimpleHtmlReportConfiguration;
-import net.sf.jasperreports.export.SimpleOutputStreamExporterOutput;
-import net.sf.jasperreports.export.SimplePdfReportConfiguration;
-import net.sf.jasperreports.export.SimpleReportExportConfiguration;
-import net.sf.jasperreports.export.SimpleWriterExporterOutput;
 import net.sf.jasperreports.web.servlets.AsyncJasperPrintAccessor;
 import net.sf.jasperreports.web.servlets.ReportExecutionStatus;
 
-@SuppressWarnings("deprecation")
 public class JasperManager implements Runnable
 {
 	private JasperReport jasperReport;
 
 	private static transient Logger logger = LogManager.getLogger(JasperManager.class);
 
-	private final Map<String, Object> boundParams = new HashMap<>();
+	private final Map<String, Object> boundParams = new HashMap<String, Object>();
 
 	private CustomAsynchronousFillHandle fillHandle;
 
@@ -127,25 +115,6 @@ public class JasperManager implements Runnable
 			{
 				return AttachmentType.PDF;
 			}
-
-			@Override
-			public void export(JasperPrint jasper_print, OutputStream stream, SimpleReportExportConfiguration config,
-					Map<String, byte[]> images) throws JRException
-			{
-				JRPdfExporter exporter = new JRPdfExporter();
-				exporter.setExporterInput(new SimpleExporterInput(jasper_print));
-				exporter.setConfiguration((PdfReportConfiguration) config);
-				SimpleOutputStreamExporterOutput output = new SimpleOutputStreamExporterOutput(stream);
-				exporter.setExporterOutput(output);
-				exporter.exportReport();
-			}
-
-			@Override
-			public SimpleReportExportConfiguration getConfig()
-			{
-				return new SimplePdfReportConfiguration();
-			}
-
 		},
 		HTML
 		{
@@ -165,62 +134,6 @@ public class JasperManager implements Runnable
 			public AttachmentType getAttachementType()
 			{
 				return AttachmentType.HTML;
-			}
-
-			@Override
-			public void export(JasperPrint jasper_print, OutputStream stream, SimpleReportExportConfiguration config,
-					final Map<String, byte[]> images) throws JRException
-			{
-				HtmlExporter exporter = new HtmlExporter();
-
-				config.setHyperlinkProducerFactory(new CustomJRHyperlinkProducerFactory());
-
-				exporter.setExporterInput(new SimpleExporterInput(jasper_print));
-				final String imageUrl;
-				if (VaadinServlet.getCurrent() != null)
-				{
-					String context = VaadinServlet.getCurrent().getServletContext().getContextPath();
-					int contextIndex = Page.getCurrent().getLocation().toString().lastIndexOf(context);
-					String baseurl = Page.getCurrent().getLocation().toString().substring(0,
-							contextIndex + context.length() + 1);
-
-					imageUrl = baseurl + "VaadinJasperPrintServlet?image=";
-
-				}
-				else
-				{
-					imageUrl = "";
-					logger.warn("Vaadin Servlet doens't have a current context");
-				}
-
-				exporter.setConfiguration((HtmlReportConfiguration) config);
-
-				SimpleHtmlExporterOutput output = new SimpleHtmlExporterOutput(stream);
-
-				output.setImageHandler(new HtmlResourceHandler()
-				{
-
-					@Override
-					public void handleResource(String id, byte[] data)
-					{
-						images.put(id, data);
-
-					}
-
-					@Override
-					public String getResourcePath(String id)
-					{
-						return imageUrl + id;
-					}
-				});
-				exporter.setExporterOutput(output);
-				exporter.exportReport();
-			}
-
-			@Override
-			public SimpleReportExportConfiguration getConfig()
-			{
-				return new SimpleHtmlReportConfiguration();
 			}
 		},
 		CSV
@@ -242,26 +155,6 @@ public class JasperManager implements Runnable
 			{
 				return AttachmentType.CSV;
 			}
-
-			@Override
-			public void export(JasperPrint jasper_print, OutputStream stream, SimpleReportExportConfiguration config,
-					Map<String, byte[]> images) throws JRException
-			{
-				JRCsvExporter exporter = new JRCsvExporter();
-				exporter.setExporterInput(new SimpleExporterInput(jasper_print));
-				exporter.setConfiguration((CsvReportConfiguration) config);
-				SimpleWriterExporterOutput output = new SimpleWriterExporterOutput(stream);
-				exporter.setExporterOutput(output);
-				exporter.exportReport();
-
-			}
-
-			@Override
-			public SimpleReportExportConfiguration getConfig()
-			{
-				return new SimpleCsvReportConfiguration();
-
-			}
 		};
 
 		abstract public String getMimeType();
@@ -270,18 +163,13 @@ public class JasperManager implements Runnable
 
 		abstract public AttachmentType getAttachementType();
 
-		abstract public void export(JasperPrint jasper_print, OutputStream stream,
-				SimpleReportExportConfiguration config, Map<String, byte[]> images) throws JRException;
-
-		abstract public SimpleReportExportConfiguration getConfig();
-
 	}
 
 	/**
 	 * key: report filename <br>
 	 * value: last time it was compiled
 	 */
-	final static Map<String, Long> compiledReports = new ConcurrentHashMap<>();
+	final static Map<String, Long> compiledReports = new ConcurrentHashMap<String, Long>();
 
 	/**
 	 *
@@ -367,7 +255,7 @@ public class JasperManager implements Runnable
 
 		double pageWidth = designFile.getPageWidth() + (margin * 2);
 
-		double ratio = 0.75; // landscape
+		double ratio = 0.75; // landscape;
 		if (designFile.getPageHeight() / pageWidth >= 1)
 		{
 			ratio = 1.5; // portrait
@@ -552,7 +440,7 @@ public class JasperManager implements Runnable
 				{
 					JRDesignStaticText labelElement = new JRDesignStaticText();
 
-					String strippedLabel = param.getLabel(parameterName).replaceAll("ReportParameter", "");
+					String strippedLabel = param.getLabel().replaceAll("ReportParameter", "");
 
 					labelElement.setText(strippedLabel);
 					labelElement.setWidth(125);
@@ -790,34 +678,30 @@ public class JasperManager implements Runnable
 		final CountDownLatch latch = new CountDownLatch(1);
 		exportAsync(exportMethod, params, new JasperProgressListener()
 		{
-
+			
 			@Override
 			public void outputStreamReady()
 			{
 				latch.countDown();
-
+				
 			}
-
+			
 			@Override
 			public void failed(String string)
 			{
 				latch.countDown();
-
+				
 			}
-
+			
 			@Override
 			public void completed()
 			{
 				latch.countDown();
-
+				
 			}
 		});
 		latch.await();
 		InputStream stream = getStream();
-		if (stream == null)
-		{
-			throw new RuntimeException("Unable to get stream");
-		}
 		// completeBarrier.await();
 		return new RenderedReport(stream, imagesrcs, exportMethod);
 
@@ -834,14 +718,6 @@ public class JasperManager implements Runnable
 		readerReady.countDown();
 		if (!writerReady.await(10, TimeUnit.SECONDS))
 		{
-			try
-			{
-				inputStream.close();
-			}
-			catch (IOException e)
-			{
-				logger.error(e, e);
-			}
 			throw new RuntimeException("Couldn't attach to writer stream");
 		}
 		return inputStream;
@@ -853,11 +729,11 @@ public class JasperManager implements Runnable
 
 		if (params == null)
 		{
-			params = new LinkedList<>();
+			params = new LinkedList<ReportParameter<?>>();
 		}
 		this.params = params;
 
-		images = new ConcurrentHashMap<>();
+		images = new ConcurrentHashMap<String, byte[]>();
 
 		if (UI.getCurrent() != null)
 		{
@@ -913,7 +789,7 @@ public class JasperManager implements Runnable
 		thread.start();
 	}
 
-	static final LinkedBlockingQueue<QueueEntry> jobQueue = new LinkedBlockingQueue<>();
+	static final LinkedBlockingQueue<QueueEntry> jobQueue = new LinkedBlockingQueue<QueueEntry>();
 
 	@Override
 	public void run()
@@ -924,7 +800,6 @@ public class JasperManager implements Runnable
 		boolean initialized = false;
 		try
 		{
-			logger.warn("{} permits are available", concurrentLimit.availablePermits());
 			concurrentLimit.acquire();
 			initialized = true;
 			inQueue = false;
@@ -967,6 +842,9 @@ public class JasperManager implements Runnable
 			}
 
 			reportProperties.prepareForOutputFormat(exportMethod);
+			CustomJRHyperlinkProducerFactory.setUseCustomHyperLinks(true);
+
+			JRAbstractExporter exporter = null;
 
 			queueEntry.setStatus("Gathering report data phase 2");
 
@@ -987,34 +865,78 @@ public class JasperManager implements Runnable
 			}
 
 			JasperPrint jasper_print = fillReport(exportMethod);
-			queueEntry.setStatus("Waiting for browser to start streaming");
+
+			switch (exportMethod)
+			{
+				case HTML:
+				{
+					exporter = new JRHtmlExporter();
+
+					exporter.setParameter(JRExporterParameter.JASPER_PRINT, jasper_print);
+					exporter.setParameter(JRHtmlExporterParameter.IMAGES_MAP, images);
+
+					if (VaadinServlet.getCurrent() != null)
+					{
+						String context = VaadinServlet.getCurrent().getServletContext().getContextPath();
+						int contextIndex = Page.getCurrent().getLocation().toString().lastIndexOf(context);
+						String baseurl = Page.getCurrent().getLocation().toString().substring(0,
+								contextIndex + context.length() + 1);
+
+						String imageUrl = baseurl + "VaadinJasperPrintServlet?image=";
+
+						exporter.setParameter(JRHtmlExporterParameter.IMAGES_URI, imageUrl);
+					}
+					else
+					{
+						logger.warn("Vaadin Servlet doens't have a current context");
+					}
+					break;
+				}
+				case PDF:
+				{
+					exporter = new JRPdfExporter();
+					exporter.setParameter(JRExporterParameter.JASPER_PRINT, jasper_print);
+					break;
+				}
+				case CSV:
+				{
+					exporter = new JRCsvExporter();
+					exporter.setParameter(JRExporterParameter.JASPER_PRINT, jasper_print);
+					break;
+				}
+				default:
+				{
+					throw new RuntimeException("Unsupported export option " + exportMethod);
+				}
+
+			}
+
+			imagesrcs = (images.size() <= 0) ? null : new DataSource[images.size()];
+			if (imagesrcs != null)
+			{
+				int xi = 0;
+				for (Map.Entry<String, byte[]> entry : images.entrySet())
+				{
+					ByteArrayDataSource image = new ByteArrayDataSource(entry.getValue(), "image/gif");
+					image.setName(entry.getKey());
+					imagesrcs[xi++] = image;
+				}
+			}
 
 			if (stop)
 			{
 				return;
 			}
+			createPageProgressMonitor(exporter);
 
+			queueEntry.setStatus("Waiting for browser to start streaming");
 			progressListener.outputStreamReady();
 			if (readerReady.await(10, TimeUnit.SECONDS))
 			{
-
 				outputStream = new PipedOutputStream(inputStream);
 				writerReady.countDown();
-
-				exportMethod.export(jasper_print, outputStream, getPageMonitorConfig(exportMethod.getConfig()), images);
-
-				imagesrcs = (images.size() <= 0) ? null : new DataSource[images.size()];
-				if (imagesrcs != null)
-				{
-					int xi = 0;
-					for (Map.Entry<String, byte[]> entry : images.entrySet())
-					{
-						ByteArrayDataSource image = new ByteArrayDataSource(entry.getValue(), "image/gif");
-						image.setName(entry.getKey());
-						imagesrcs[xi++] = image;
-					}
-				}
-
+				exporter.setParameter(JRExporterParameter.OUTPUT_STREAM, outputStream);
+				exporter.exportReport();
 			}
 			else
 			{
@@ -1069,6 +991,7 @@ public class JasperManager implements Runnable
 					logger.error(e, e);
 				}
 			}
+			CustomJRHyperlinkProducerFactory.setUseCustomHyperLinks(false);
 			if (initialized)
 			{
 				concurrentLimit.release();
@@ -1090,9 +1013,9 @@ public class JasperManager implements Runnable
 
 	}
 
-	private SimpleReportExportConfiguration getPageMonitorConfig(SimpleReportExportConfiguration context)
+	private void createPageProgressMonitor(JRAbstractExporter exporter)
 	{
-		context.setProgressMonitor(new JRExportProgressMonitor()
+		exporter.setParameter(JRExporterParameter.PROGRESS_MONITOR, new JRExportProgressMonitor()
 		{
 			int pageCount = 0;
 
@@ -1104,16 +1027,13 @@ public class JasperManager implements Runnable
 
 			}
 		});
-		return context;
 	}
 
 	protected static String getJasperFile(final String dir, final String name) throws IOException
 	{
 		final File file = new File(dir, name);
 		if (!file.exists())
-		{
 			throw new FileNotFoundException(file.toString());
-		}
 		return file.getCanonicalPath();
 	}
 
@@ -1149,9 +1069,7 @@ public class JasperManager implements Runnable
 
 				}
 				if (pos > reportLimit)
-				{
 					reportStatus.setStatus("Waiting for " + (pos - reportLimit) + " of the queued reports to complete");
-				}
 			}
 		}
 		catch (Exception e)

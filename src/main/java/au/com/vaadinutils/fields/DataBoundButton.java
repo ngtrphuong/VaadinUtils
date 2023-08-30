@@ -4,6 +4,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.vaadin.data.Property;
@@ -11,11 +12,6 @@ import com.vaadin.data.Validator;
 import com.vaadin.data.Validator.InvalidValueException;
 import com.vaadin.ui.Button;
 import com.vaadin.ui.Field;
-
-import org.apache.logging.log4j.LogManager;
-
-import au.com.vaadinutils.listener.ListenerManager;
-import au.com.vaadinutils.listener.ListenerManagerFactory;
 
 public class DataBoundButton<T> extends Button implements Field<T>
 {
@@ -33,13 +29,12 @@ public class DataBoundButton<T> extends Button implements Field<T>
 	private boolean invalidCommitted = false;
 	private boolean buffered = false;
 
-	Set<Validator> validators = new HashSet<>();
+	Set<Validator> validators = new HashSet<Validator>();
 	private boolean invalidAllowed = true;
+	
+	 transient Logger logger   =  LogManager.getLogger(DataBoundButton.class);
 
-	transient Logger logger = LogManager.getLogger(DataBoundButton.class);
-
-	ListenerManager<ValueChangeListener> listeners = ListenerManagerFactory.createListenerManager("DataBoundButton",
-			10);
+	Set<ValueChangeListener> listeners = new HashSet<ValueChangeListener>();
 
 	DataBoundButton(Class<T> type)
 	{
@@ -76,7 +71,7 @@ public class DataBoundButton<T> extends Button implements Field<T>
 	@Override
 	public void discard() throws SourceException
 	{
-
+		
 		value = dataSource.getValue();
 
 	}
@@ -176,28 +171,28 @@ public class DataBoundButton<T> extends Button implements Field<T>
 	@Override
 	public void addValueChangeListener(ValueChangeListener listener)
 	{
-		listeners.addListener(listener);
+		listeners.add(listener);
 
 	}
 
 	@Override
 	public void addListener(ValueChangeListener listener)
 	{
-		listeners.addListener(listener);
+		listeners.add(listener);
 
 	}
 
 	@Override
 	public void removeValueChangeListener(ValueChangeListener listener)
 	{
-		listeners.removeListener(listener);
+		listeners.remove(listener);
 
 	}
 
 	@Override
 	public void removeListener(ValueChangeListener listener)
 	{
-		listeners.removeListener(listener);
+		listeners.remove(listener);
 
 	}
 
@@ -261,7 +256,7 @@ public class DataBoundButton<T> extends Button implements Field<T>
 	public void clear()
 	{
 		// TODO Auto-generated method stub
-
+		
 	}
 
 }

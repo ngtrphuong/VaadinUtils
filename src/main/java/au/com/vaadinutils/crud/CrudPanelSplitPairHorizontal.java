@@ -31,13 +31,13 @@ public class CrudPanelSplitPairHorizontal extends HorizontalSplitPanel implement
 	}
 	
 	@Override
-	public void showFirstComponent()
+	public void showFirstComponet()
 	{
 		
 	}
 
 	@Override
-	public void showSecondComponent()
+	public void showSecondComponet()
 	{
 		
 	}

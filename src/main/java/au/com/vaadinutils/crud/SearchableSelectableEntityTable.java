@@ -3,7 +3,14 @@ package au.com.vaadinutils.crud;
 import java.lang.annotation.Annotation;
 import java.util.Collection;
 
+import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import au.com.vaadinutils.crud.security.SecurityManagerFactoryProxy;
+import au.com.vaadinutils.fields.SelectionListener;
+import au.com.vaadinutils.listener.ClickEventLogged;
+import au.com.vaadinutils.menu.Menu;
+import au.com.vaadinutils.menu.Menus;
 
 import com.vaadin.data.Container;
 import com.vaadin.data.Container.Filter;
@@ -30,18 +37,12 @@ import com.vaadin.ui.VerticalLayout;
 import com.vaadin.ui.themes.Reindeer;
 import com.vaadin.ui.themes.ValoTheme;
 
-import au.com.vaadinutils.crud.security.SecurityManagerFactoryProxy;
-import au.com.vaadinutils.fields.SelectionListener;
-import au.com.vaadinutils.listener.ClickEventLogged;
-import au.com.vaadinutils.menu.Menu;
-import au.com.vaadinutils.menu.Menus;
-
 public abstract class SearchableSelectableEntityTable<E> extends VerticalLayout
 {
 	private static final long serialVersionUID = 1L;
 
 	@SuppressWarnings("unused")
-	private static Logger logger = org.apache.logging.log4j.LogManager.getLogger();
+	private static Logger logger = LogManager.getLogger();
 
 	protected TextField searchField = new TextField();
 	private AbstractLayout advancedSearchLayout;
@@ -68,16 +69,11 @@ public abstract class SearchableSelectableEntityTable<E> extends VerticalLayout
 			return;
 		}
 
-		searchBar = buildSearchBar();
+		 searchBar = buildSearchBar();
 
-		final String titleText = getTitle();
-		if (titleText != null && !titleText.isEmpty())
-		{
-			Label title = new Label(getTitle());
-			title.setStyleName(Reindeer.LABEL_H1);
-			this.addComponent(title);
-		}
-
+		Label title = new Label(getTitle());
+		title.setStyleName(Reindeer.LABEL_H1);
+		this.addComponent(title);
 		this.addComponent(searchBar);
 		this.addComponent(selectableTable);
 		this.setExpandRatio(selectableTable, 1);
@@ -95,7 +91,6 @@ public abstract class SearchableSelectableEntityTable<E> extends VerticalLayout
 		{
 			private static final long serialVersionUID = 1L;
 
-			@Override
 			@SuppressWarnings("deprecation")
 			public void itemClick(ItemClickEvent event)
 			{
@@ -107,7 +102,7 @@ public abstract class SearchableSelectableEntityTable<E> extends VerticalLayout
 		});
 	}
 
-	abstract public HeadingPropertySet getHeadingPropertySet();
+	abstract public HeadingPropertySet<E> getHeadingPropertySet();
 
 	abstract public Filterable getContainer();
 
@@ -128,7 +123,7 @@ public abstract class SearchableSelectableEntityTable<E> extends VerticalLayout
 		return "Override getTitle() to set a custom title.";
 	}
 
-	protected CrudSecurityManager getSecurityManager()
+	private CrudSecurityManager getSecurityManager()
 	{
 		return SecurityManagerFactoryProxy.getSecurityManager(this.getClass());
 	}
@@ -141,12 +136,12 @@ public abstract class SearchableSelectableEntityTable<E> extends VerticalLayout
 	protected AbstractLayout buildSearchBar()
 	{
 		VerticalLayout layout = new VerticalLayout();
-		layout.setWidth(100, Unit.PERCENTAGE);
-		searchField.setWidth(100, Unit.PERCENTAGE);
+		layout.setWidth("100%");
+		searchField.setWidth("100%");
 		searchBar = layout;
 
 		HorizontalLayout basicSearchLayout = new HorizontalLayout();
-		basicSearchLayout.setWidth(100, Unit.PERCENTAGE);
+		basicSearchLayout.setSizeFull();
 		basicSearchLayout.setSpacing(true);
 		layout.addComponent(basicSearchLayout);
 
@@ -164,7 +159,6 @@ public abstract class SearchableSelectableEntityTable<E> extends VerticalLayout
 		{
 			private static final long serialVersionUID = 1L;
 
-			@Override
 			public void textChange(final TextChangeEvent event)
 			{
 				filterString = event.getText().trim();
@@ -187,7 +181,6 @@ public abstract class SearchableSelectableEntityTable<E> extends VerticalLayout
 		return layout;
 	}
 
-	@SuppressWarnings("deprecation")
 	public void disableSelectable()
 	{
 		selectableTable.disableSelectable();
@@ -283,13 +276,9 @@ public abstract class SearchableSelectableEntityTable<E> extends VerticalLayout
 		boolean advancedSearchActive = advancedSearchOn;
 		Filter filter = getContainerFilter(searchText, advancedSearchActive);
 		if (filter == null)
-		{
 			resetFilters();
-		}
 		else
-		{
 			applyFilter(filter);
-		}
 
 	}
 
@@ -332,7 +321,6 @@ public abstract class SearchableSelectableEntityTable<E> extends VerticalLayout
 		return selectableTable.getSelectedIds();
 	}
 
-	@SuppressWarnings("deprecation")
 	public void addSelectionListener(SelectionListener listener)
 	{
 		selectableTable.addSelectionListener(listener);
@@ -363,14 +351,12 @@ public abstract class SearchableSelectableEntityTable<E> extends VerticalLayout
 
 	}
 
-	@SuppressWarnings("deprecation")
 	public void setSelected(Collection<Long> ids)
 	{
 		selectableTable.setSelectedValue(ids);
 
 	}
 
-	@SuppressWarnings("deprecation")
 	public void setMultiSelect(boolean b)
 	{
 		selectableTable.setMultiSelect(true);
@@ -388,14 +374,12 @@ public abstract class SearchableSelectableEntityTable<E> extends VerticalLayout
 
 	}
 
-	@SuppressWarnings("deprecation")
 	public void deselectAll()
 	{
 		selectableTable.deselectAll();
 
 	}
 
-	@SuppressWarnings("deprecation")
 	public Object getSelectedItems()
 	{
 		return selectableTable.getSelectedItems();
@@ -422,7 +406,6 @@ public abstract class SearchableSelectableEntityTable<E> extends VerticalLayout
 		return selectableTable;
 	}
 
-	@SuppressWarnings("deprecation")
 	public void selectAll()
 	{
 		selectableTable.selectAll();
@@ -436,10 +419,5 @@ public abstract class SearchableSelectableEntityTable<E> extends VerticalLayout
 	public boolean isColumnReorderingAllowed()
 	{
 		return selectableTable.isColumnReorderingAllowed();
-	}
-
-	public void refresh()
-	{
-		selectableTable.refreshRowCache();
 	}
 }

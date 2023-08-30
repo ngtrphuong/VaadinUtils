@@ -7,7 +7,10 @@ import java.io.IOException;
 import java.io.Reader;
 import java.util.List;
 
+import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import au.com.bytecode.opencsv.CSVReader;
 
 import com.vaadin.data.Item;
 import com.vaadin.data.Property;
@@ -16,10 +19,6 @@ import com.vaadin.ui.Component;
 import com.vaadin.ui.Notification;
 import com.vaadin.ui.Table;
 import com.vaadin.ui.VerticalLayout;
-
-import org.apache.logging.log4j.LogManager;
-
-import au.com.bytecode.opencsv.CSVReader;
 
 public class PreviewCSV
 {
@@ -112,10 +111,11 @@ public class PreviewCSV
 	protected IndexedContainer buildContainerFromCSV(Reader reader, int rowLimit) throws IOException
 	{
 		IndexedContainer container = new IndexedContainer();
-	
-		try(CSVReader csvReader = new CSVReader(reader);)
+		CSVReader csvReader = null;
+
+		try
 		{
-			
+			csvReader = new CSVReader(reader);
 			String[] columnHeaders = null;
 			String[] record;
 
@@ -136,7 +136,11 @@ public class PreviewCSV
 				}
 			}
 		}
-		
+		finally
+		{
+			if (csvReader != null)
+				csvReader.close();
+		}
 		return container;
 	}
 

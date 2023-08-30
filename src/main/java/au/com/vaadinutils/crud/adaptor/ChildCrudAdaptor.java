@@ -9,12 +9,12 @@ import com.vaadin.addon.jpacontainer.JPAContainer;
 import com.vaadin.data.Container.Filter;
 import com.vaadin.ui.Component;
 
+import au.com.vaadinutils.crud.BaseCrudView;
 import au.com.vaadinutils.crud.ChildCrudEntity;
 import au.com.vaadinutils.crud.ChildCrudView;
 import au.com.vaadinutils.crud.CrudAction;
 import au.com.vaadinutils.crud.CrudEntity;
 import au.com.vaadinutils.crud.HeadingPropertySet;
-import au.com.vaadinutils.crud.ParentCrud;
 import au.com.vaadinutils.crud.ValidatingFieldGroup;
 
 /**
@@ -26,7 +26,8 @@ import au.com.vaadinutils.crud.ValidatingFieldGroup;
  * 
  * @author rsutton
  *
- * @param <P>
+ * @param
+ * 			<P>
  * @param <E>
  */
 public class ChildCrudAdaptor<P extends CrudEntity, E extends ChildCrudEntity> extends ChildCrudView<P, E>
@@ -35,7 +36,7 @@ public class ChildCrudAdaptor<P extends CrudEntity, E extends ChildCrudEntity> e
 	private static final long serialVersionUID = 1L;
 	private ChildCrudInterface<P, E> client;
 
-	public ChildCrudAdaptor(ChildCrudInterface<P, E> client, ParentCrud<P> parent, Class<P> parentType,
+	public ChildCrudAdaptor(ChildCrudInterface<P, E> client, BaseCrudView<P> parent, Class<P> parentType,
 			Class<E> childType, SingularAttribute<? extends CrudEntity, ? extends Object> parentKey,
 			SingularAttribute<? extends CrudEntity, ? extends Object> childKey)
 	{
@@ -64,7 +65,7 @@ public class ChildCrudAdaptor<P extends CrudEntity, E extends ChildCrudEntity> e
 	}
 
 	@Override
-	public void init(Class<E> entityClass, JPAContainer<E> container, HeadingPropertySet headings)
+	public void init(Class<E> entityClass, JPAContainer<E> container, HeadingPropertySet<E> headings)
 	{
 		super.init(entityClass, container, headings);
 	}
@@ -79,12 +80,6 @@ public class ChildCrudAdaptor<P extends CrudEntity, E extends ChildCrudEntity> e
 	public void disallowDelete(boolean disallow)
 	{
 		super.disallowDelete(disallow);
-	}
-
-	@Override
-	public void enableDragAndDropOrdering(final SingularAttribute<E, Long> ordinalField)
-	{
-		super.enableDragAndDropOrdering(ordinalField);
 	}
 
 	@Override
@@ -109,7 +104,7 @@ public class ChildCrudAdaptor<P extends CrudEntity, E extends ChildCrudEntity> e
 	public void createNewEntity(E previousEntity) throws InstantiationException, IllegalAccessException
 	{
 		super.createNewEntity(previousEntity);
-		newEntity = client.createNewEntity(newEntity, previousEntity);
+		newEntity= client.createNewEntity(newEntity,previousEntity);
 	}
 
 	@Override
@@ -128,7 +123,6 @@ public class ChildCrudAdaptor<P extends CrudEntity, E extends ChildCrudEntity> e
 	@Override
 	protected void postNew(EntityItem<E> newEntity)
 	{
-		super.postNew(newEntity);
 		client.postNew(newEntity);
 	}
 

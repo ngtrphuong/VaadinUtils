@@ -1,8 +1,6 @@
 package au.com.vaadinutils.crud;
 
-import java.io.Serializable;
-
-public interface CrudEntity extends Serializable
+public interface CrudEntity
 {
 
 	public Long getId();

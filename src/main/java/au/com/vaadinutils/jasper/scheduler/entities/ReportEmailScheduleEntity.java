@@ -25,14 +25,14 @@ import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
 import javax.validation.constraints.NotNull;
 
-import com.google.common.base.Preconditions;
-
 import au.com.vaadinutils.crud.CrudEntity;
 import au.com.vaadinutils.jasper.JasperManager.OutputFormat;
 import au.com.vaadinutils.jasper.scheduler.ReportEmailParameter;
 import au.com.vaadinutils.jasper.scheduler.ReportEmailSchedule;
 import au.com.vaadinutils.jasper.scheduler.ScheduledDateParameter;
 import au.com.vaadinutils.jasper.ui.JasperReportProperties;
+
+import com.google.common.base.Preconditions;
 
 @Entity
 @Table(name = "tblreportemailschedule")
@@ -62,12 +62,14 @@ public class ReportEmailScheduleEntity implements Serializable, CrudEntity, Repo
 
 	private String JasperReportPropertiesClassName;
 
-	@OneToMany(cascade = { CascadeType.REMOVE, CascadeType.PERSIST })
+	@OneToMany(cascade =
+	{ CascadeType.REMOVE, CascadeType.PERSIST })
 	private List<ReportEmailScheduledDateParameter> dateParameters = new LinkedList<>();
 
 	boolean enabled = true;
 
-	@OneToOne(cascade = { CascadeType.PERSIST })
+	@OneToOne(cascade =
+	{ CascadeType.REMOVE, CascadeType.PERSIST })
 	private ReportEmailSender sender;
 
 	@Temporal(TemporalType.TIMESTAMP)
@@ -86,7 +88,8 @@ public class ReportEmailScheduleEntity implements Serializable, CrudEntity, Repo
 
 	private String scheduledDaysOfWeek = "";
 
-	@OneToMany(cascade = { CascadeType.REMOVE, CascadeType.PERSIST })
+	@OneToMany(cascade =
+	{ CascadeType.REMOVE, CascadeType.PERSIST })
 	private List<ReportEmailParameterEntity> reportParameters;
 
 	@NotNull
@@ -102,7 +105,8 @@ public class ReportEmailScheduleEntity implements Serializable, CrudEntity, Repo
 	 */
 	private String reportLog;
 
-	@ManyToMany(cascade = { CascadeType.PERSIST })
+	@ManyToMany(cascade =
+	{ CascadeType.PERSIST })
 	private List<ReportEmailRecipient> recipients = new LinkedList<ReportEmailRecipient>();
 
 	private String reportFileName;
@@ -245,15 +249,6 @@ public class ReportEmailScheduleEntity implements Serializable, CrudEntity, Repo
 		return (Class<? extends JasperReportProperties>) Class.forName(JasperReportPropertiesClassName);
 	}
 
-	/**
-	 * This is the title for the report, it should not be specific any anyway to
-	 * the parameters.
-	 * 
-	 * This title is compiled into the report template. All subsequent runs of
-	 * this report template will have the same title regardless this parameter.
-	 * 
-	 * @param reportTitle2
-	 */
 	public void setTitle(String reportTitle2)
 	{
 		reportTitle = reportTitle2;

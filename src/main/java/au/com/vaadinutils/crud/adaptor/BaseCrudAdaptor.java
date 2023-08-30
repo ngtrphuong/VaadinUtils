@@ -2,8 +2,6 @@ package au.com.vaadinutils.crud.adaptor;
 
 import java.util.List;
 
-import javax.persistence.metamodel.SingularAttribute;
-
 import com.vaadin.addon.jpacontainer.EntityItem;
 import com.vaadin.addon.jpacontainer.JPAContainer;
 import com.vaadin.data.Container.Filter;
@@ -24,7 +22,8 @@ import au.com.vaadinutils.crud.ValidatingFieldGroup;
  * 
  * @author rsutton
  *
- * @param <P>
+ * @param
+ * 			<P>
  * @param <E>
  */
 public class BaseCrudAdaptor<P, E extends CrudEntity> extends BaseCrudView<E> implements CrudAdaptor<P, E>
@@ -52,19 +51,13 @@ public class BaseCrudAdaptor<P, E extends CrudEntity> extends BaseCrudView<E> im
 	}
 
 	@Override
-	public void enableDragAndDropOrdering(final SingularAttribute<E, Long> ordinalField)
-	{
-		super.enableDragAndDropOrdering(ordinalField);
-	}
-
-	@Override
 	public void disallowNew(boolean disallow)
 	{
 		super.disallowNew(disallow);
 	}
 
 	@Override
-	public void init(Class<E> entityClass, JPAContainer<E> container, HeadingPropertySet headings)
+	public void init(Class<E> entityClass, JPAContainer<E> container, HeadingPropertySet<E> headings)
 	{
 		super.init(entityClass, container, headings);
 	}
@@ -103,7 +96,7 @@ public class BaseCrudAdaptor<P, E extends CrudEntity> extends BaseCrudView<E> im
 	public void createNewEntity(E previousEntity) throws InstantiationException, IllegalAccessException
 	{
 		super.createNewEntity(previousEntity);
-		newEntity = client.createNewEntity(newEntity, previousEntity);
+		newEntity= client.createNewEntity(newEntity,previousEntity);
 	}
 
 	@Override
@@ -122,7 +115,6 @@ public class BaseCrudAdaptor<P, E extends CrudEntity> extends BaseCrudView<E> im
 	@Override
 	protected void postNew(EntityItem<E> newEntity)
 	{
-		super.postNew(newEntity);
 		client.postNew(newEntity);
 	}
 

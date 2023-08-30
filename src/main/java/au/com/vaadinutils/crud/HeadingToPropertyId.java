@@ -1,11 +1,10 @@
 package au.com.vaadinutils.crud;
 
-import com.google.common.base.Preconditions;
+import com.google.gwt.thirdparty.guava.common.base.Preconditions;
 import com.vaadin.ui.Table.ColumnGenerator;
 
-public class HeadingToPropertyId
+public class HeadingToPropertyId<E>
 {
-
 	private final String heading;
 	private final String propertyId;
 	private final ColumnGenerator columnGenerator;
@@ -41,66 +40,19 @@ public class HeadingToPropertyId
 		this.width = width;
 	}
 
-	static final class Builder
-	{
-		private final String heading;
-		private final String propertyId;
-		private ColumnGenerator columnGenerator = null;
-		private Integer width;
-		private boolean defaultVisibleState = true;
-		private boolean lockedState = false;
-
-		Builder(String heading, String propertyId)
-		{
-			this.heading = heading;
-			this.propertyId = propertyId;
-		}
-
-		HeadingToPropertyId build()
-		{
-			return new HeadingToPropertyId(heading, propertyId, columnGenerator, defaultVisibleState, lockedState,
-					width);
-		}
-
-		public Builder setLockedState(boolean lockedState)
-		{
-			this.lockedState = lockedState;
-			return this;
-		}
-
-		public Builder setDefaultVisibleState(boolean defaultVisibleState)
-		{
-			this.defaultVisibleState = defaultVisibleState;
-			return this;
-		}
-
-		public Builder setWidth(Integer width)
-		{
-			this.width = width;
-			return this;
-		}
-
-		public Builder setColumnGenerator(ColumnGenerator columnGenerator)
-		{
-			this.columnGenerator = columnGenerator;
-			return this;
-		}
-
-	}
-
-	public HeadingToPropertyId setVisibleByDefault(final boolean defaultVisibleState)
+	public HeadingToPropertyId<E> setVisibleByDefault(final boolean defaultVisibleState)
 	{
 		this.defaultVisibleState = defaultVisibleState;
 		return this;
 	}
 
-	public HeadingToPropertyId setLocked()
+	public HeadingToPropertyId<E> setLocked()
 	{
 		lockedState = true;
 		return this;
 	}
 
-	public HeadingToPropertyId setWidth(final Integer width)
+	public HeadingToPropertyId<E> setWidth(final Integer width)
 	{
 		this.width = width;
 		return this;

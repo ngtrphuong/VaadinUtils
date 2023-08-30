@@ -3,7 +3,7 @@ package au.com.vaadinutils.crud;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.vaadin.addon.jpacontainer.JPAContainer;
@@ -20,7 +20,7 @@ public class ValidatingFieldGroup<E> extends FieldGroup
 	private final Class<E> entityClass;
 	private JPAContainer<E> container;
 
-	Logger logger = org.apache.logging.log4j.LogManager.getLogger();
+	Logger logger = LogManager.getLogger();
 
 	public ValidatingFieldGroup(JPAContainer<E> container, Class<E> entityClass)
 	{
@@ -44,27 +44,12 @@ public class ValidatingFieldGroup<E> extends FieldGroup
 	private boolean groupIsDirty;
 	private DirtyListener dirtyListener;
 
-	public DirtyListener getDirtyListener()
-	{
-		return dirtyListener;
-	}
-
 	public void setDirtyListener(DirtyListener listener)
 	{
 		dirtyListener = listener;
 	}
 
-	public boolean getGroupIsDirty()
-	{
-		return groupIsDirty;
-	}
-
-	public void setGroupIsDirty(boolean groupIsDirty)
-	{
-		this.groupIsDirty = groupIsDirty;
-	}
-
-	private Set<Field<?>> knownFields = new HashSet<>();
+	private Set<Field<?>> knownFields = new HashSet<Field<?>>();
 
 	/*
 	 * Override configureField to add a bean validator to each field.
@@ -124,7 +109,6 @@ public class ValidatingFieldGroup<E> extends FieldGroup
 
 	}
 
-	@Override
 	public void discard()
 	{
 		groupIsDirty = false;
@@ -136,7 +120,6 @@ public class ValidatingFieldGroup<E> extends FieldGroup
 
 	}
 
-	@Override
 	public void setItemDataSource(Item itemDataSource)
 	{
 		groupIsDirty = false;
@@ -162,12 +145,7 @@ public class ValidatingFieldGroup<E> extends FieldGroup
 			if (field.isModified())
 			{
 				logger.warn("Dirty: {} {}", field.getCaption(), field.getClass().getSimpleName());
-				String value = null;
-				if (field.getValue() != null)
-				{
-					value = field.getValue().toString();
-				}
-				logger.warn("Dirty value: " + StringUtils.abbreviate(value, 40));
+				logger.warn("Dirty value: " + field.getValue());
 
 				return true;
 			}
@@ -175,7 +153,6 @@ public class ValidatingFieldGroup<E> extends FieldGroup
 		return false;
 	}
 
-	@Override
 	public void bind(Field<?> field, Object propertyId) throws BindException
 	{
 

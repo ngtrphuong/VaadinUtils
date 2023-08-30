@@ -9,7 +9,7 @@ public class JoinDescriptor<E>
 
 	private JoinType joinType;
 
-	// Logger logger = org.apache.logging.log4j.LogManager.getLogger();
+	// Logger logger = LogManager.getLogger();
 	<J> JoinDescriptor(SingularAttribute<? super E, J> joinAttribute, JoinType joinType)
 	{
 		this.joinAttribute = joinAttribute;

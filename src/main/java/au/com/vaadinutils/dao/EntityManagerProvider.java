@@ -8,6 +8,7 @@ import java.util.concurrent.Callable;
 import javax.persistence.EntityManager;
 import javax.validation.ConstraintViolationException;
 
+import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.google.common.base.Preconditions;
@@ -56,7 +57,7 @@ import au.com.vaadinutils.errorHandling.ErrorWindow;
  *
  * @formatter:on
  *
- * 				You can use the @Link
+ *               You can use the @Link
  *               au.com.vaadinutils.filter.EntityManagerInjectorFilter and @Link
  *               au.com.vaadinutils.filter.AtmosphereFilter to do the injection
  *               or make up your own methods.
@@ -68,7 +69,7 @@ public enum EntityManagerProvider
 {
 	INSTANCE;
 
-	private static final Logger logger = org.apache.logging.log4j.LogManager.getLogger();
+	private static final Logger logger = LogManager.getLogger();
 
 	/**
 	 * provides a mechanism to register actions that should happen should happen
@@ -78,7 +79,7 @@ public enum EntityManagerProvider
 
 	private static List<Runnable> registeredPostActions = new ArrayList<>();
 
-	private ThreadLocal<EntityManager> entityManagerThreadLocal = new ThreadLocal<>();
+	private ThreadLocal<EntityManager> entityManagerThreadLocal = new ThreadLocal<EntityManager>();
 	private javax.persistence.EntityManagerFactory emf;
 
 	/**
@@ -107,10 +108,18 @@ public enum EntityManagerProvider
 		 * Before you try to clear or replace the current entity manager you
 		 * should do something similar to:
 		 *
-		 * @formatter:off try { transaction.commit(); transaction.close();
-		 *                em.close(); } finally {
-		 *                EntityManagerProvider.setCurrentEntityManager(null); }
-		 * @formatter:on
+		 *  @formatter:off
+		 *  	try
+		 *		{
+		 *			transaction.commit();
+		 *			transaction.close();
+		 *			em.close();
+		 *		}
+		 *		finally
+		 *		{
+		 *			EntityManagerProvider.setCurrentEntityManager(null);
+		 *		}
+		 *  @formatter:on
 		 *
 		 */
 		Preconditions.checkArgument(oldem == null || !oldem.isOpen(),
@@ -146,8 +155,9 @@ public enum EntityManagerProvider
 	/**
 	 * Call this method to initialise the EntityManagerProvider so that it can
 	 * hand out EntityManagers to worker threads. Dont forget to close the
-	 * entitymanager This should normally be called from a servlet Context
-	 * Listener.
+	 * entitymanager
+	 *
+	 * This should normally be called from a servlet Context Listener.
 	 *
 	 * @param emf
 	 */
@@ -165,100 +175,62 @@ public enum EntityManagerProvider
 	 */
 	public static <T> T setThreadLocalEntityManager(EntityWorker<T> worker) throws Exception
 	{
-
-		try (AutoCloseable closer = EntityManagerProvider.setThreadLocalEntityManagerTryWithResources())
-		{
-			return worker.exec();
-		}
-
-	}
-
-	/**
-	 * provides the same functionality as
-	 * setThreadLocalEntityManager(EntityWorker w), without the need for an
-	 * anonymous inner class<br>
-	 * example usage:<br>
-	 * <br>
-	 * try(AutoCloseable closer =
-	 * EntityManagerProvider.setThreadLocalEntityManagerTryWithResources())<br>
-	 * {<br>
-	 * ...<br>
-	 * }<br>
-	 * 
-	 * @return
-	 */
-	public static AutoCloseable setThreadLocalEntityManagerTryWithResources()
-	{
-		final EntityManager em;
-
 		if (getEntityManager() == null)
 		{
-			em = createEntityManager();
+			final EntityManager em = createEntityManager();
 
-			setCurrentEntityManager(em);
-
-			em.getTransaction().begin();
-		}
-		else
-		{
-			// entityManager already existed, no need to create one or start a
-			// transaction
-			em = null;
-		}
-
-		return new AutoCloseable()
-		{
-
-			@Override
-			public void close() throws Exception
+			try
 			{
-				if (em != null)
+				setCurrentEntityManager(em);
+
+				em.getTransaction().begin();
+
+				T ret = worker.exec();
+
+				em.getTransaction().commit();
+				return ret;
+			}
+			catch (ConstraintViolationException e)
+			{
+				// ensure we get the cause of an underlying constraint violation
+				ErrorWindow.showErrorWindow(e);
+				throw e;
+			}
+			finally
+			{
+				try
 				{
 					try
 					{
-						em.getTransaction().commit();
-					}
-					catch (ConstraintViolationException e)
-					{
-						// ensure we get the cause of an underlying constraint
-						// violation
-						ErrorWindow.showErrorWindow(e);
-						throw e;
+						if (em.getTransaction().isActive())
+						{
+							logger.error("Rolling back transaction");
+							em.getTransaction().rollback();
+
+						}
 					}
 					finally
 					{
-						try
-						{
-							try
-							{
-								if (em.getTransaction().isActive())
-								{
-									logger.error("Rolling back transaction");
-									em.getTransaction().rollback();
-
-								}
-							}
-							finally
-							{
-								if (em.isOpen())
-								{
-									em.close();
-								}
-							}
-						}
-						finally
-						{
-							setCurrentEntityManager(null);
-						}
+						em.close();
 					}
 				}
+				finally
+				{
+					setCurrentEntityManager(null);
+				}
 			}
-		};
+		}
+		// there was already an active entity manager, so just use it!
+		return worker.exec();
+
 	}
 
 	/**
-	 * Allows you to pass a Runnable to wrap in an entity manager. A new
-	 * Runnable is returned which should then be called to run your runnable.
+	 * Allows you to pass a Runnable to wrap in an entity manager.
+	 *
+	 * A new Runnable is returned which should then be called to run your
+	 * runnable.
+	 *
 	 * i.e. don't run you own runnable directly rather use the returned
 	 * Runnable.
 	 *
@@ -274,13 +246,22 @@ public enum EntityManagerProvider
 			@Override
 			public void run()
 			{
-				try (AutoCloseable closer = EntityManagerProvider.setThreadLocalEntityManagerTryWithResources())
+				try
 				{
-					runnable.run();
+					setThreadLocalEntityManager(new EntityWorker<Void>()
+					{
+
+						@Override
+						public Void exec() throws Exception
+						{
+							runnable.run();
+							return null;
+						}
+					});
 				}
 				catch (Exception e)
 				{
-					ErrorWindow.showErrorWindow(e);
+					logger.error(e, e);
 				}
 
 			}
@@ -288,8 +269,11 @@ public enum EntityManagerProvider
 	}
 
 	/**
-	 * Allows you to pass in a Callable to wrap in an entity manager. A new
-	 * Callable is returned which should then be called to run your Callable.
+	 * Allows you to pass in a Callable to wrap in an entity manager.
+	 *
+	 * A new Callable is returned which should then be called to run your
+	 * Callable.
+	 *
 	 * i.e. don't run you own Callable directly rather use the returned
 	 * Callable.
 	 *
@@ -306,15 +290,34 @@ public enum EntityManagerProvider
 			@Override
 			public T call() throws Exception
 			{
-				try (AutoCloseable closer = EntityManagerProvider.setThreadLocalEntityManagerTryWithResources())
+				T result = null;
+				try
 				{
-					return callable.call();
+					setThreadLocalEntityManager(new EntityWorker<T>()
+					{
+
+						@Override
+						public T exec() throws Exception
+						{
+							return callable.call();
+						}
+					});
+
 				}
+				catch (Exception e)
+				{
+					logger.error(e, e);
+					throw e;
+				}
+				return result;
+
 			}
 		};
 	}
 
 	/**
+	 *
+	 *
 	 * If you have a worker thread then it won't have access to a thread local
 	 * entity manager (as they are injected by the servlet request filters
 	 * mentioned above. <br>
@@ -323,6 +326,7 @@ public enum EntityManagerProvider
 	 * <br>
 	 * Otherwise you need to call this method to get an entity manager. You will
 	 * also need to call close when done
+	 *
 	 *
 	 * @return
 	 */
@@ -341,7 +345,7 @@ public enum EntityManagerProvider
 
 		// you might want to use this if your having deadlocks...
 		// don't ever use JPAFactory to build your JPAContainers
-		// return new EntityManagerWrapper(entityManager);
+		//return new EntityManagerWrapper(entityManager);
 	}
 
 	/**
@@ -393,17 +397,16 @@ public enum EntityManagerProvider
 
 	/**
 	 * Adds a runnable to the list of Actions that will be performed after the
-	 * entity manager for this thread has been cleared. NOTE: as the EM has been
-	 * cleared the Runnable must NOT try any database operations as they will
-	 * fail.
+	 * entity manager for this thread has been cleared.
+	 *
+	 * NOTE: as the EM has been cleared the Runnable must NOT try any database
+	 * operations as they will fail.
 	 *
 	 * @param runnable
 	 *            The Action to run when the em is cleared.
 	 */
 	public static void registerTransientPostAction(Runnable runnable)
 	{
-		Preconditions.checkNotNull(getEntityManager());
-		Preconditions.checkState(getEntityManager().isOpen());
 		List<Runnable> actionList = transientPostTransactionActions.get();
 		if (actionList == null)
 		{
@@ -416,18 +419,21 @@ public enum EntityManagerProvider
 
 	private static void runTransientPostActions()
 	{
-
-		List<Runnable> actions = transientPostTransactionActions.get();
-		// These actions are transient, so clear them out.
-		transientPostTransactionActions.set(null);
-		runRunnableActions(actions);
-
+		try
+		{
+			List<Runnable> actions = transientPostTransactionActions.get();
+			runRunnableActions(actions);
+		}
+		finally
+		{
+			// These actions are transient, so once run we clear them out.
+			transientPostTransactionActions.set(null);
+		}
 	}
 
 	private static void runRunnableActions(List<Runnable> actions)
 	{
 		if (actions != null)
-		{
 			for (Runnable action : actions)
 			{
 				try
@@ -439,31 +445,14 @@ public enum EntityManagerProvider
 					logger.error(e, e);
 				}
 			}
-		}
-	}
-
-	/**
-	 * this is useful when you need to run code in a separate transaction and
-	 * thread after the current transaction commits
-	 */
-	public static void registerTransientPostActionOnNewThread(final Runnable runnable)
-	{
-		registerTransientPostAction(new Runnable()
-		{
-
-			@Override
-			public void run()
-			{
-				new Thread(runnable).start();
-
-			}
-		});
 	}
 
 	/**
 	 * Register an action that will be executed before begin is called on the
-	 * transaction. Registered actions are global and will be run across all
-	 * threads every time an entity manager is set via void
+	 * transaction.
+	 *
+	 * Registered actions are global and will be run across all threads every
+	 * time an entity manager is set via void
 	 * setCurrentEntityManager(EntityManager em)
 	 *
 	 * @param action
@@ -520,7 +509,6 @@ public enum EntityManagerProvider
 	public static void runActions(List<EMAction> actions, EntityManager em)
 	{
 		if (actions != null)
-		{
 			for (EMAction action : actions)
 			{
 				try
@@ -532,7 +520,6 @@ public enum EntityManagerProvider
 					logger.error(e, e);
 				}
 			}
-		}
 	}
 
 	static public abstract class EMAction
@@ -540,61 +527,4 @@ public enum EntityManagerProvider
 		abstract public void run(EntityManager em);
 	}
 
-	/**
-	 * Executes outstanding queries but does not commit the transaction
-	 */
-	public static void flush()
-	{
-		INSTANCE.entityManagerThreadLocal.get().flush();
-	}
-
-	/**
-	 * Commits the current active transaction and starts a new one
-	 */
-	public static void commitAndContinue()
-	{
-		commit();
-		begin();
-	}
-
-	/**
-	 * Commits the current active transaction
-	 */
-	public static void commit()
-	{
-		INSTANCE.entityManagerThreadLocal.get().getTransaction().commit();
-	}
-
-	/**
-	 * Starts a new transaction
-	 */
-	public static void begin()
-	{
-		INSTANCE.entityManagerThreadLocal.get().getTransaction().begin();
-	}
-
-	/**
-	 * Evicts all entities in the JPA cache
-	 */
-	public static void evictCache()
-	{
-		INSTANCE.entityManagerThreadLocal.get().getEntityManagerFactory().getCache().evictAll();
-	}
-
-	/**
-	 * Evicts all entities of the specified class in the JPA cache
-	 */
-	public static void evictCache(final Class<?> entityClass)
-	{
-		INSTANCE.entityManagerThreadLocal.get().getEntityManagerFactory().getCache().evict(entityClass);
-	}
-
-	/**
-	 * Evicts the entity of the specified class with the specified key in the
-	 * JPA cache
-	 */
-	public static void evictCache(final Class<?> entityClass, final Object key)
-	{
-		INSTANCE.entityManagerThreadLocal.get().getEntityManagerFactory().getCache().evict(entityClass, key);
-	}
 }

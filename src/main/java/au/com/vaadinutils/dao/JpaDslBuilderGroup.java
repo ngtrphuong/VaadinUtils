@@ -1,12 +1,7 @@
 package au.com.vaadinutils.dao;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
-
-import au.com.vaadinutils.dao.JpaBaseDao.Condition;
 
 /**
  * Sometimes it is faster to run multiple queries returning the same entity than
@@ -18,28 +13,24 @@ import au.com.vaadinutils.dao.JpaBaseDao.Condition;
  * 
  * <pre>
  * <code>
- * final JpaDslBuilderGroup<TblSalesCustCallItem> queryGroup = new JpaDslBuilderGroup<>(TblSalesCustCallItem.class);
- * queryGroup.setCommon(new JpaDslBuilderGroupCommon<TblSalesCustCallItem>()
+ * JpaDslBuilderGroup<TblContact> queryGroup = new JpaDslBuilderGroup<>(TblContact.class);
+ * queryGroup.distinct();
+ * 
+ * queryGroup.addItem(new JpaDslBuilderItem<TblContact>()
  * {
- * 		&#64;Override
- * 		public void conditionsWillBeAdded(JpaDslBuilder<TblSalesCustCallItem> builder,
- * 				List<Condition<TblSalesCustCallItem>> conditions)
- * 		{
- * 			conditions.add(builder.eq(TblSalesCustCallItem_.contact, contact));
+ * 	@Override
+ * 	public void conditionsWillBeAdded(JpaDslBuilder<TblContact> builder)
+ * 	{
+ * 		final Condition<TblContact> primaryCondition = builder.in(builder.join(TblContact_.tblCustomers),
+ * 					TblCustomer_.customerID, parentIds);
+ * 			final Condition<TblContact> mainCriteria = applySearchFilter(searchFilterEnabled, contactShareEnabled,
+ * 					builder, account, primaryCondition);
+ * 			builder.where(mainCriteria);
  * 		}
- * });
- *  
- * queryGroup.addItem(new JpaDslBuilderGroupItem<TblSalesCustCallItem>()
- * {
- * 		&#64;Override
- * 		public void conditionsWillBeAdded(JpaDslBuilder<TblSalesCustCallItem> builder,
- * 				List<Condition<TblSalesCustCallItem>> conditions)
- * 		{
- * 			conditions.add(builder.eq(TblSalesCustCallItem_.salesperson, salesperson));
- * 		}
- * });
- *  
- * final List<TblSalesCustCallItem> results = queryGroup.getResults();
+ * 	});
+ * }
+ * 
+ * final List<TblContact> results = queryGroup.getResults();
  * </code>
  * </pre>
  *
@@ -47,111 +38,42 @@ import au.com.vaadinutils.dao.JpaBaseDao.Condition;
 public class JpaDslBuilderGroup<E>
 {
 
-	private List<JpaDslBuilderGroupItem<E>> builders = new ArrayList<>();
-	private JpaDslBuilderGroupCommon<E> common;
+	List<JpaDslBuilderItem<E>> builders = new LinkedList<>();
 	private Class<E> entityClass;
-	private List<E> results;
+	private List<E> results = new LinkedList<>();
 	private boolean distinct = false;
-	private List<JpaDslOrder> orders = new ArrayList<>();
 
 	public JpaDslBuilderGroup(final Class<E> entityClass)
 	{
 		this.entityClass = entityClass;
 	}
 
-	public void addItem(JpaDslBuilderGroupItem<E> builder)
+	public void addItem(JpaDslBuilderItem<E> builder)
 	{
 		builders.add(builder);
 	}
 
-	public interface JpaDslBuilderGroupItem<E>
+	public interface JpaDslBuilderItem<E>
 	{
-		public void conditionsWillBeAdded(final JpaDslBuilder<E> builder, final List<Condition<E>> conditions);
-	}
-
-	public void setCommon(JpaDslBuilderGroupCommon<E> common)
-	{
-		this.common = common;
-	}
-
-	public interface JpaDslBuilderGroupCommon<E>
-	{
-		public void conditionsWillBeAdded(final JpaDslBuilder<E> builder, final List<Condition<E>> conditions);
+		public void conditionsWillBeAdded(final JpaDslBuilder<E> builder);
 	}
 
 	public List<E> getResults()
 	{
-		final Collection<E> results;
-		if (distinct)
+		for (JpaDslBuilderItem<E> builder : builders)
 		{
-			results = new HashSet<>();
-		}
-		else
-		{
-			results = new ArrayList<>();
-		}
-
-		if (builders.size() > 0)
-		{
-			for (JpaDslBuilderGroupItem<E> builder : builders)
-			{
-				results.addAll(makeQuery(builder));
-			}
-		}
-		else
-		{
-			results.addAll(makeQuery(null));
+			final JpaDslBuilder<E> q = new JpaDslBuilder<E>(entityClass);
+			builder.conditionsWillBeAdded(q);
+			if (distinct)
+				q.distinct();
+			results.addAll(q.getResultList());
 		}
 
-		if (distinct)
-		{
-			this.results = new ArrayList<>(results);
-		}
-		else
-		{
-			this.results = (List<E>) results;
-		}
-
-		return this.results;
-	}
-
-	private List<E> makeQuery(final JpaDslBuilderGroupItem<E> builder)
-	{
-		final JpaDslBuilder<E> q = new JpaDslBuilder<>(entityClass);
-		final List<Condition<E>> conditions = new LinkedList<>();
-
-		if (common != null)
-		{
-			common.conditionsWillBeAdded(q, conditions);
-		}
-
-		if (builder != null)
-		{
-			builder.conditionsWillBeAdded(q, conditions);
-		}
-
-		if (distinct)
-		{
-			q.distinct();
-		}
-
-		q.where(conditions);
-
-		for (JpaDslOrder order : orders)
-		{
-			q.orderBy(order.getField(), order.getAscending());
-		}
-
-		return q.getResultList();
+		return results;
 	}
 
 	public void distinct()
 	{
 		distinct = true;
-	}
-
-	public void orderBy(final String field, final boolean ascending)
-	{
-		orders.add(new JpaDslOrder(field, ascending));
 	}
 }

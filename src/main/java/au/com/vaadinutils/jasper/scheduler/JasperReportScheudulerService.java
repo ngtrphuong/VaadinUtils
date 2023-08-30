@@ -12,26 +12,24 @@ import au.com.vaadinutils.jasper.scheduler.entities.ReportEmailScheduleEntity;
 
 public enum JasperReportScheudulerService implements ReportEmailScheduleProvider
 {
-	// Logger logger = org.apache.logging.log4j.LogManager.getLogger();
+	// Logger logger = LogManager.getLogger();
 	SELF;
 
 	private Scheduler scheduler;
+	
 
 	public void start(JasperEmailSettings settings, DBmanager dbManager)
 	{
 		ReportEmailRunner runner = new ReportEmailRunnerImpl();
 
-		scheduler = new Scheduler(this, runner, settings, dbManager);
+		scheduler = new Scheduler(this, runner, settings,dbManager);
 	}
-
+	
 	public void stop()
 	{
-		if (scheduler != null)
-		{
-			scheduler.stop();
-		}
+		scheduler.stop();
 	}
-
+	
 	public void reschedule()
 	{
 		scheduler.reschedule();
@@ -49,29 +47,31 @@ public enum JasperReportScheudulerService implements ReportEmailScheduleProvider
 		return schedules;
 	}
 
-	// @Override
-	// public void commitDbTransaction()
-	// {
-	// EntityManager em = EntityManagerProvider.getEntityManager();
-	// em.getTransaction().commit();
-	// EntityManagerProvider.setCurrentEntityManager(null);
-	// em.close();
-	// }
-	//
-	// @Override
-	// public void beginDbTransaction()
-	// {
-	// EntityManager em = EntityManagerProvider.createEntityManager();
-	// EntityManagerProvider.setCurrentEntityManager(em);
-	// em.getTransaction().begin();
-	// }
+
+
+//	@Override
+//	public void commitDbTransaction()
+//	{
+//		EntityManager em = EntityManagerProvider.getEntityManager();
+//		em.getTransaction().commit();
+//		EntityManagerProvider.setCurrentEntityManager(null);
+//		em.close();
+//	}
+//
+//	@Override
+//	public void beginDbTransaction()
+//	{
+//		EntityManager em = EntityManagerProvider.createEntityManager();
+//		EntityManagerProvider.setCurrentEntityManager(em);
+//		em.getTransaction().begin();
+//	}
 
 	@Override
 	public void delete(ReportEmailSchedule schedule)
 	{
 		EntityManager em = EntityManagerProvider.getEntityManager();
 		em.remove(schedule);
-
+		
 	}
 
 }

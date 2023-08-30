@@ -4,8 +4,7 @@ public interface HelpDisplayedCallback
 {
 
 	void success();
-
+	
 	void fail();
-
-	void showHelpLoadingSplash();
 }
+

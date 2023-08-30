@@ -1,14 +1,6 @@
 package au.com.vaadinutils.crud;
 
-/**
- * A CrudSecurityManager is created each time a users logs into the application.
- *
- * The security Manager maps the User to the SecurityModel which stores the
- * Feature/Action/Role matrix for the application.
- *
- * @author bsutton
- *
- */
+
 
 public interface CrudSecurityManager
 {
@@ -28,7 +20,5 @@ public interface CrudSecurityManager
 	boolean isUserSuperUser();
 
 	String getFeatureName();
-
-	String getUserDisallowedReason(Enum<?> outboundContactHub);
 
 }

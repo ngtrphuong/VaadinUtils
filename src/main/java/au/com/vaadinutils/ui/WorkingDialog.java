@@ -174,7 +174,8 @@ public class WorkingDialog extends Window implements ProgressListener<String>
 	 */
 	public void setEntityWorker(Runnable runnable, CompleteListener listener)
 	{
-		setWorker(new EntityManagerRunnable(runnable), listener);
+		setWorker(new EntityManagerRunnable(runnable),listener);
+
 
 	}
 
@@ -228,7 +229,7 @@ public class WorkingDialog extends Window implements ProgressListener<String>
 	@Override
 	public void progress(int count, int max, final String message)
 	{
-		ui.access(new Runnable()
+		ui.accessSynchronously(new Runnable()
 		{
 			@Override
 			public void run()

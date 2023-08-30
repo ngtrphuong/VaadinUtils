@@ -2,11 +2,10 @@ package au.com.vaadinutils.crud;
 
 import java.util.Collection;
 
-import com.vaadin.data.Container;
-
 import au.com.vaadinutils.fields.TableCheckBoxSelect;
 
-@SuppressWarnings("deprecation")
+import com.vaadin.data.Container;
+
 public class SelectableEntityTable<E> extends TableCheckBoxSelect
 {
 	// private static transient Logger logger =
@@ -15,7 +14,7 @@ public class SelectableEntityTable<E> extends TableCheckBoxSelect
 	private static final long serialVersionUID = 1L;
 	private String uniqueId;
 
-	public SelectableEntityTable(Container.Filterable childContainer, HeadingPropertySet headingPropertySet,
+	public SelectableEntityTable(Container.Filterable childContainer, HeadingPropertySet<E> headingPropertySet,
 			String uniqueId)
 	{
 		super();
@@ -33,7 +32,7 @@ public class SelectableEntityTable<E> extends TableCheckBoxSelect
 	 * @param headingPropertySet2
 	 * @return
 	 */
-	private void buildSelectableContainer(HeadingPropertySet visibleColumns)
+	private void buildSelectableContainer(HeadingPropertySet<E> visibleColumns)
 	{
 		visibleColumns.applyToTable(this, uniqueId);
 

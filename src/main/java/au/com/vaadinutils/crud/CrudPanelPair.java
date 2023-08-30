@@ -1,6 +1,5 @@
 package au.com.vaadinutils.crud;
 
-import com.vaadin.server.Sizeable.Unit;
 import com.vaadin.ui.Component;
 
 public interface CrudPanelPair
@@ -14,12 +13,10 @@ public interface CrudPanelPair
 
 	public void setSplitPosition(float pos);
 
-	public void showFirstComponent();
+	public void showFirstComponet();
 
-	public void showSecondComponent();
+	public void showSecondComponet();
 
 	void setLocked(boolean locked);
-
-	public void setSplitPosition(float pos, Unit units);
 
 }

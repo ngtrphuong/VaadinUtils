@@ -172,7 +172,8 @@ public class JpaDslSubqueryBuilder<P, E> extends JpaDslBuilder<E>
 			@Override
 			public Predicate getPredicates()
 			{
-				return builder.equal(parentRoot.get(parentAttrib), getJoin(join).get(subQueryAttrib));
+				return builder.equal(parentRoot.get(parentAttrib), join.getJoin(root).get(subQueryAttrib));
+
 			}
 		};
 	}

@@ -7,6 +7,7 @@ import java.util.Iterator;
 
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.vaadin.server.Constants;
@@ -21,7 +22,7 @@ public class PartialDownloadStream extends DownloadStream
 
 	private long contentLength;
 
-	Logger logger = org.apache.logging.log4j.LogManager.getLogger();
+	Logger logger = LogManager.getLogger();
 
 	public PartialDownloadStream(InputStream stream, String contentType, String fileName)
 	{
@@ -104,8 +105,8 @@ public class PartialDownloadStream extends DownloadStream
 			}
 			if (start != null && end == null)
 			{
-				response.setHeader("Content-Range",
-						"bytes " + start + "-" + (contentLength - 1) + "/" + (contentLength));
+				response.setHeader("Content-Range", "bytes " + start + "-" + (contentLength - 1) + "/"
+						+ (contentLength));
 				response.setHeader("Content-Length", String.valueOf(contentLength - start));
 
 			}
@@ -155,10 +156,6 @@ public class PartialDownloadStream extends DownloadStream
 			{
 				logger.error("Error {}", (contentLength - (start)) - totalWritten);
 			}
-		}
-		catch (IOException e)
-		{
-			logger.warn(e.getMessage());
 		}
 		catch (Exception e)
 		{

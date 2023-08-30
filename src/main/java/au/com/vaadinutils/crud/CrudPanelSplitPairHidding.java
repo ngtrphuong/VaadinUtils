@@ -3,14 +3,14 @@ package au.com.vaadinutils.crud;
 import com.vaadin.ui.Component;
 import com.vaadin.ui.VerticalLayout;
 
-public class CrudPanelSplitPairHiding extends VerticalLayout implements CrudPanelPair
+public class CrudPanelSplitPairHidding extends VerticalLayout implements CrudPanelPair
 {
 	
 	private static final long serialVersionUID = -3273324048011746886L;
 	VerticalLayout firstPanel = new VerticalLayout();
 	VerticalLayout secondPanel = new VerticalLayout();
 	
-	CrudPanelSplitPairHiding()
+	CrudPanelSplitPairHidding()
 	{
 		addComponent(firstPanel);
 	}
@@ -44,14 +44,14 @@ public class CrudPanelSplitPairHiding extends VerticalLayout implements CrudPane
 	}
 
 	@Override
-	public void showFirstComponent()
+	public void showFirstComponet()
 	{
 		removeAllComponents();
 		addComponent(firstPanel);
 	}
 
 	@Override
-	public void showSecondComponent()
+	public void showSecondComponet()
 	{
 		removeAllComponents();
 		addComponent(secondPanel);
@@ -59,13 +59,6 @@ public class CrudPanelSplitPairHiding extends VerticalLayout implements CrudPane
 
 	@Override
 	public void setLocked(boolean locked)
-	{
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void setSplitPosition(float pos, Unit units)
 	{
 		// TODO Auto-generated method stub
 		

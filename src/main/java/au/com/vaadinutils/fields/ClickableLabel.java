@@ -1,10 +1,6 @@
 package au.com.vaadinutils.fields;
 
-import com.vaadin.event.LayoutEvents.LayoutClickEvent;
-import com.vaadin.event.LayoutEvents.LayoutClickListener;
 import com.vaadin.shared.ui.label.ContentMode;
-import com.vaadin.ui.Button.ClickEvent;
-import com.vaadin.ui.Button.ClickListener;
 import com.vaadin.ui.Label;
 import com.vaadin.ui.VerticalLayout;
 
@@ -24,14 +20,8 @@ public class ClickableLabel extends VerticalLayout
 
 	public ClickableLabel(String value)
 	{
-		this(value, ContentMode.HTML);
-	}
-
-	public ClickableLabel(String value, ContentMode contentMode)
-	{
-		label = new Label(value, contentMode);
+		label = new Label(value, ContentMode.HTML);
 		addComponent(label);
-		setImmediate(true);
 	}
 
 	public void setValue(String value)
@@ -39,16 +29,9 @@ public class ClickableLabel extends VerticalLayout
 		label.setValue(value);
 	}
 
-	@Override
 	public void setStyleName(String style)
 	{
 		label.setStyleName(style);
-	}
-
-	@Override
-	public void addStyleName(String style)
-	{
-		label.addStyleName(style);
 	}
 
 	public void setContentMode(ContentMode contentMode)
@@ -60,30 +43,5 @@ public class ClickableLabel extends VerticalLayout
 	public String getValue()
 	{
 		return label.getValue() != null ? label.getValue() : "";
-	}
-
-	/**
-	 * makes the ClickableLabel a drop in replace ment for a button
-	 * 
-	 * @param clickListener
-	 */
-	public void addClickListener(final ClickListener clickListener)
-	{
-		addLayoutClickListener(new LayoutClickListener()
-		{
-
-			@Override
-			public void layoutClick(LayoutClickEvent event)
-			{
-				clickListener.buttonClick(new ClickEvent(event.getComponent()));
-
-			}
-		});
-
-	}
-
-	public Label getLabel()
-	{
-		return label;
 	}
 }

@@ -7,6 +7,4 @@ public interface UserSettingsStorage
 
 	String get(String string);
 
-	void erase(String partialKey);
-
 }

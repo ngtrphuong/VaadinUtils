@@ -5,10 +5,11 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import javax.validation.ConstraintViolationException;
 
+import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.vaadin.teemu.wizards.WizardStep;
 
-import com.google.common.base.Preconditions;
+import com.google.gwt.thirdparty.guava.common.base.Preconditions;
 import com.vaadin.addon.jpacontainer.EntityItem;
 import com.vaadin.addon.jpacontainer.JPAContainer;
 import com.vaadin.addon.jpacontainer.JPAContainer.ProviderChangedEvent;
@@ -18,8 +19,6 @@ import com.vaadin.data.fieldgroup.FieldGroup.CommitException;
 import com.vaadin.ui.Component;
 import com.vaadin.ui.Notification;
 import com.vaadin.ui.Notification.Type;
-
-import org.apache.logging.log4j.LogManager;
 
 import au.com.vaadinutils.crud.CrudEntity;
 import au.com.vaadinutils.crud.FormHelper;
@@ -46,7 +45,7 @@ public abstract class SingleEntityWizardStep<E extends CrudEntity> implements Wi
 	{
 		this.entityClass = entityClass;
 		this.container = entityDao.createVaadinContainer();
-		fieldGroup = new ValidatingFieldGroup<>(entityClass);
+		fieldGroup = new ValidatingFieldGroup<E>(entityClass);
 
 	}
 
@@ -205,7 +204,7 @@ public abstract class SingleEntityWizardStep<E extends CrudEntity> implements Wi
 	{
 		// don't really need an AtomicReference, just using it as a mutable
 		// final variable to be used in the callback
-		final AtomicReference<E> newEntity = new AtomicReference<>();
+		final AtomicReference<E> newEntity = new AtomicReference<E>();
 
 		// call back to collect the id of the new record when the container
 		// fires the ItemSetChangeEvent

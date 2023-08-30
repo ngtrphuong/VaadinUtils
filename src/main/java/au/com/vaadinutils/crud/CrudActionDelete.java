@@ -1,5 +1,6 @@
 package au.com.vaadinutils.crud;
 
+import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.vaadin.dialogs.ConfirmDialog;
 
@@ -15,7 +16,7 @@ public class CrudActionDelete<E extends CrudEntity> implements CrudAction<E>
 	private DeleteAction<E> action;
 	private String message;
 
-	Logger logger = org.apache.logging.log4j.LogManager.getLogger();
+	Logger logger = LogManager.getLogger();
 
 	public CrudActionDelete()
 	{
@@ -55,61 +56,60 @@ public class CrudActionDelete<E extends CrudEntity> implements CrudAction<E>
 		if (response.canDelete)
 		{
 
-			String titleText = crud.getTitleText();
-			if (titleText.contains("getTitleText()"))
+			ConfirmDialog.show(UI.getCurrent(), "Confirm Delete", "Are you sure you want to delete "
+					+ entity.getEntity().getName() + "? " + message, "Delete", "Cancel", new ConfirmDialog.Listener()
 			{
-				titleText = entity.getEntity().getClass().getSimpleName() + " (getTitleText() not implemented)";
-			}
-			String name = entity.getEntity().getName();
-			if (name == null)
-			{
-				name = "" + entity.getEntity().getId();
-			}
-			ConfirmDialog.show(UI.getCurrent(), "Confirm Delete",
-					"Are you sure you want to delete " + titleText + " - '" + name + "' ? " + message, "Delete",
-					"Cancel", new ConfirmDialog.Listener()
+				private static final long serialVersionUID = 1L;
+
+				@Override
+				public void onClose(ConfirmDialog dialog)
+				{
+					if (dialog.isConfirmed())
+					{
+						if (action != null)
+						{
+							try
+							{
+								action.delete(entity);
+							}
+							catch (Exception e)
+							{
+								logger.error(e, e);
+								Notification.show("Errors occurred when deleting " + e.getMessage(), Type.ERROR_MESSAGE);
+							}
+						}
+						crud.delete();
+					}
+				}
+
+			});
+		}
+		else
+		{
+			ConfirmDialog dialog = ConfirmDialog.show(UI.getCurrent(), "Cannot Delete", response.getMessage(), "OK",
+					"Cance", new ConfirmDialog.Listener()
 					{
 						private static final long serialVersionUID = 1L;
 
 						@Override
 						public void onClose(ConfirmDialog dialog)
 						{
-							if (dialog.isConfirmed())
-							{
-								if (action != null)
-								{
-									try
-									{
-										action.delete(entity);
-									}
-									catch (Exception e)
-									{
-										logger.error(e, e);
-										Notification.show("Errors occurred when deleting " + e.getMessage(),
-												Type.ERROR_MESSAGE);
-									}
-								}
-								crud.delete();
-							}
+
 						}
 
 					});
-		}
-		else
-		{
-			Notification.show(response.getMessage(), Type.ERROR_MESSAGE);
+			dialog.getCancelButton().setVisible(false);
+			dialog.center();
 
 		}
 
 	}
 
-	@Override
 	public String toString()
 	{
 		return "Delete";
 	}
 
-	@Override
 	public boolean isDefault()
 	{
 		return isDefault;

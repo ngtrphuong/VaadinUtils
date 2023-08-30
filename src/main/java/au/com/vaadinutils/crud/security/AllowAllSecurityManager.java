@@ -3,10 +3,10 @@ package au.com.vaadinutils.crud.security;
 import au.com.vaadinutils.crud.CrudSecurityManager;
 
 /**
- * allow all except super user
- *
+ * allow all execept super user
+ * 
  * @author rsutton
- *
+ * 
  */
 public class AllowAllSecurityManager implements CrudSecurityManager
 {
@@ -59,11 +59,5 @@ public class AllowAllSecurityManager implements CrudSecurityManager
 	public String getFeatureName()
 	{
 		return "";
-	}
-
-	@Override
-	public String getUserDisallowedReason(Enum<?> outboundContactHub)
-	{
-		return this.getClass().getSimpleName();
 	}
 }

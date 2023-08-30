@@ -10,12 +10,12 @@ import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.Set;
 
+import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.vaadin.data.Property;
 import com.vaadin.data.Validator;
 import com.vaadin.data.Validator.InvalidValueException;
-import com.vaadin.server.ErrorMessage;
 import com.vaadin.server.FontAwesome;
 import com.vaadin.ui.Button;
 import com.vaadin.ui.Button.ClickEvent;
@@ -97,43 +97,10 @@ public class TimePicker extends HorizontalLayout implements Field<Date>
 
 			private static final long serialVersionUID = 1L;
 
-			@SuppressWarnings("deprecation")
 			@Override
 			public void valueChange(com.vaadin.data.Property.ValueChangeEvent event)
 			{
-				try
-				{
-					final Date parsedDate = parseDate((String) event.getProperty().getValue());
-
-					if (parsedDate != null)
-					{
-						dateTime.set(Calendar.HOUR_OF_DAY, parsedDate.getHours());
-						dateTime.set(Calendar.MINUTE, parsedDate.getMinutes());
-						isSet = true;
-						setNewValue();
-					}
-					TimePicker.this.valueChange(event);
-					field.setComponentError(null);
-				}
-				catch (final InvalidValueException e)
-				{
-					field.setComponentError(new ErrorMessage()
-					{
-						private static final long serialVersionUID = 1L;
-
-						@Override
-						public String getFormattedHtmlMessage()
-						{
-							return e.getMessage();
-						}
-
-						@Override
-						public ErrorLevel getErrorLevel()
-						{
-							return ErrorLevel.ERROR;
-						}
-					});
-				}
+				TimePicker.this.valueChange(event);
 			}
 		});
 
@@ -197,7 +164,6 @@ public class TimePicker extends HorizontalLayout implements Field<Date>
 		}
 	}
 
-	@Override
 	public void focus()
 	{
 		super.focus();
@@ -209,20 +175,14 @@ public class TimePicker extends HorizontalLayout implements Field<Date>
 
 		try
 		{
-			if (field.getValue() != null)
+			Date value = parseDate(field.getValue());
+			int hourNumber = value.getHours() % 12;
+			if (hourNumber == 0)
 			{
-				Date value = parseDate(field.getValue());
-				if (value != null)
-				{
-					int hourNumber = value.getHours() % 12;
-					if (hourNumber == 0)
-					{
-						hourNumber = 12;
-					}
-
-					displayTime.setValue(field.getValue());
-				}
+				hourNumber = 12;
 			}
+
+			displayTime.setValue(field.getValue());
 		}
 		catch (Exception e)
 		{
@@ -233,12 +193,13 @@ public class TimePicker extends HorizontalLayout implements Field<Date>
 		final Window window = new Window(title);
 		window.setModal(true);
 		window.setResizable(false);
-		// window.setWidth("550");
-		// window.setHeight("220");
+		window.setWidth("430");
+		window.setHeight("220");
 		window.setClosable(false);
 
 		HorizontalLayout layout = new HorizontalLayout();
 		layout.setSizeFull();
+		layout.setMargin(true);
 		layout.setSpacing(true);
 		layout.setStyleName(Reindeer.BUTTON_SMALL);
 
@@ -264,31 +225,43 @@ public class TimePicker extends HorizontalLayout implements Field<Date>
 		});
 
 		VerticalLayout hourPanelLabelWrapper = new VerticalLayout();
-		hourPanelLabelWrapper.setWidth("225");
 
 		Label hourLabel = new Label("Hour");
 
+		// hourLabel.setBackgroundColor(headerColor);
 		hourLabel.setWidth("230");
+		// hourLabel.setHeight("30");
+		// hourLabel.setAutoFit(false);
 		HorizontalLayout innerHourLabelPanel = new HorizontalLayout();
 
+		// innerHourLabelPanel.setPadding(5);
 		innerHourLabelPanel.addComponent(hourLabel);
 		innerHourLabelPanel.setWidth("100");
+		// innerHourLabelPanel.setHeight("30");
 		hourPanelLabelWrapper.addComponent(innerHourLabelPanel);
 
 		VerticalLayout minuteLabelWrapper = new VerticalLayout();
 		minuteLabelWrapper.setWidth("60");
 		Label minuteLabel = new Label("Minute");
+		// minuteLabel.setBackgroundColor(headerColor);
+		// minuteLabel.setStyleName("njadmin-search-colour");
 
 		minuteLabel.setWidth("45");
+		// minuteLabel.setHeight("30");
+		// minuteLabel.setAutoFit(false);
 		VerticalLayout innerMinuteLabelPanel = new VerticalLayout();
+		// innerMinuteLabelPanel.setPadding(5);
 		innerMinuteLabelPanel.addComponent(minuteLabel);
 		innerMinuteLabelPanel.setWidth("45");
+		// innerMinuteLabelPanel.setHeight("30");
 
 		minuteLabelWrapper.addComponent(innerMinuteLabelPanel);
 
 		HorizontalLayout hourPanel = new HorizontalLayout();
+		// hourPanel.setPadding(5);
 
 		HorizontalLayout amPmPanel = new HorizontalLayout();
+		// amPmPanel.setPadding(5);
 
 		VerticalLayout amPmButtonPanel = new VerticalLayout();
 		amPmPanel.addComponent(amPmButtonPanel);
@@ -299,6 +272,7 @@ public class TimePicker extends HorizontalLayout implements Field<Date>
 		addHourButtons(hourButtonPanel, 2, 6);
 
 		HorizontalLayout minutePanel = new HorizontalLayout();
+		// minutePanel.setPadding(5);
 		HorizontalLayout minuteButtonPanel = new HorizontalLayout();
 		minutePanel.addComponent(minuteButtonPanel);
 		addMinuteButtons(minuteButtonPanel, 2, 4);
@@ -312,7 +286,8 @@ public class TimePicker extends HorizontalLayout implements Field<Date>
 
 		minuteLabelWrapper.addComponent(minutePanel);
 		layout.addComponent(minuteLabelWrapper);
-		layout.setExpandRatio(minuteLabelWrapper, 1);
+		layout.setExpandRatio(hourPanelLabelWrapper, 0.7f);
+		layout.setExpandRatio(minuteLabelWrapper, 0.3f);
 
 		HorizontalLayout okcancel = new HorizontalLayout();
 		okcancel.setSizeFull();
@@ -375,16 +350,18 @@ public class TimePicker extends HorizontalLayout implements Field<Date>
 		okcancel.addComponent(cancel);
 		okcancel.addComponent(clear);
 		okcancel.addComponent(ok);
+		okcancel.setMargin(true);
 		okcancel.setSpacing(true);
 		okcancel.setExpandRatio(displayTime, 0.50f);
 
 		VerticalLayout wrapper = new VerticalLayout();
 
+		wrapper.setSizeFull();
 		wrapper.addComponent(layout);
 		wrapper.addComponent(okcancel);
+		wrapper.setExpandRatio(layout, 0.9f);
+		wrapper.setExpandRatio(okcancel, 0.5f);
 		window.setContent(wrapper);
-		wrapper.setMargin(true);
-		wrapper.setSpacing(true);
 
 		UI.getCurrent().addWindow(window);
 
@@ -622,7 +599,7 @@ public class TimePicker extends HorizontalLayout implements Field<Date>
 		return isBuffered;
 	}
 
-	Logger logger = org.apache.logging.log4j.LogManager.getLogger();
+	Logger logger = LogManager.getLogger();
 
 	@Override
 	public boolean isModified()
@@ -680,7 +657,7 @@ public class TimePicker extends HorizontalLayout implements Field<Date>
 	@Override
 	public Collection<Validator> getValidators()
 	{
-		Collection<Validator> validators = new LinkedList<>();
+		Collection<Validator> validators = new LinkedList<Validator>();
 		validators.add(timeValidator);
 		validators.addAll(this.validators);
 		return validators;
@@ -844,12 +821,14 @@ public class TimePicker extends HorizontalLayout implements Field<Date>
 	@Override
 	public boolean isEmpty()
 	{
+		// TODO Auto-generated method stub
 		return false;
 	}
 
 	@Override
 	public void clear()
 	{
+		// TODO Auto-generated method stub
 
 	}
 

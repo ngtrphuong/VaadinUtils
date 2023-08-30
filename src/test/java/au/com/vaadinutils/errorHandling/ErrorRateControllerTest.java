@@ -44,7 +44,7 @@ public class ErrorRateControllerTest
 	{
 
 		int counter = 0;
-		for (int i = 0; i < 30; i++)
+		for (int i = 0; i < 60; i++)
 		{
 			if (errorRateController.acquire())
 			{
@@ -93,7 +93,7 @@ public class ErrorRateControllerTest
 
 	}
 
-	// Logger logger = org.apache.logging.log4j.LogManager.getLogger();
+	// Logger logger = LogManager.getLogger();
 
 	private long expected(Stopwatch timer)
 	{

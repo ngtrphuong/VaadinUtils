@@ -4,7 +4,7 @@ import au.com.vaadinutils.crud.CrudEntity;
 
 public interface CrudEventListener
 {
-	// Logger logger = org.apache.logging.log4j.LogManager.getLogger();
+	// Logger logger = LogManager.getLogger();
 	
 	public void crudEvent(CrudEventType event,CrudEntity entity);
 }

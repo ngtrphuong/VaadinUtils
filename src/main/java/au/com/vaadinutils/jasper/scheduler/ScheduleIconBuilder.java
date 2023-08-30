@@ -10,6 +10,7 @@ import java.io.IOException;
 
 import javax.imageio.ImageIO;
 
+import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.google.common.base.Preconditions;
@@ -17,7 +18,7 @@ import com.google.common.base.Preconditions;
 public class ScheduleIconBuilder
 {
 
-	Logger logger = org.apache.logging.log4j.LogManager.getLogger();
+	Logger logger = LogManager.getLogger();
 
 	/**
 	 * image is rendered at twice the requested size to guarantee good quality

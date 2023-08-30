@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
+import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.vaadin.data.Property;
@@ -17,10 +18,6 @@ import com.vaadin.server.ErrorMessage;
 import com.vaadin.ui.CheckBox;
 import com.vaadin.ui.Table;
 
-/**
- * @deprecated Use Vaadin's Grid component instead
- */
-@Deprecated
 public class TableCheckBoxSelect extends Table
 {
 
@@ -31,7 +28,7 @@ public class TableCheckBoxSelect extends Table
 	private Set<ValueChangeListener> valueChangeListeners = new HashSet<ValueChangeListener>();
 	protected int containerSize = 0;
 
-	Logger logger = org.apache.logging.log4j.LogManager.getLogger();
+	Logger logger = LogManager.getLogger();
 
 	public TableCheckBoxSelect()
 	{
@@ -191,25 +188,19 @@ public class TableCheckBoxSelect extends Table
 	public void setValue(Object value)
 	{
 		final ArrayList<Object> v = new ArrayList<>(1);
-		if (value != null)
-			v.add(value);
+		v.add(value);
 		super.setValue(v);
 	}
 
 	@SuppressWarnings("unchecked")
 	public void setSelectedValue(Object value)
 	{
-		// If table is selectable with checkboxes then update the selected ids,
-		// otherwise update the selected checkboxes
-		if (selectable)
-		{
-			markedIds.clear(true, containerSize);
-			markedIds.addAll((Collection<Long>) value);
-		}
-		else
-			super.setValue(value);
+		// super.setValue(newValue);
+		markedIds.clear(true, containerSize);
+		markedIds.addAll((Collection<Long>) value);
 
 		this.refreshRowCache();
+
 	}
 
 	@Override

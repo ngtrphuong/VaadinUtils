@@ -1,22 +1,12 @@
 package au.com.vaadinutils.util;
 
-import org.apache.logging.log4j.Logger;
-
 import com.vaadin.server.DownloadStream;
 import com.vaadin.server.StreamResource;
-import com.vaadin.ui.Notification;
-import com.vaadin.ui.Notification.Type;
-import com.vaadin.ui.UI;
-
-import au.com.vaadinutils.errorHandling.ErrorWindow;
 
 public class StreamResourceWithContentLength extends StreamResource
 {
 
 	private ContentLengthProviderStreamSource contentLengthProvider;
-	UI ui = UI.getCurrent();
-
-	Logger logger = org.apache.logging.log4j.LogManager.getLogger();
 
 	public StreamResourceWithContentLength(ContentLengthProviderStreamSource streamSource, String filename)
 	{
@@ -30,45 +20,21 @@ public class StreamResourceWithContentLength extends StreamResource
 	public DownloadStream getStream()
 	{
 		final StreamSource ss = getStreamSource();
-
-		PartialDownloadStream ds = new PartialDownloadStream(null, getMIMEType(), getFilename());
-
-		if (ss != null)
+		if (ss == null)
 		{
-			try
-			{
-				long contentLength = contentLengthProvider.getContentLength();
-				ds.setStream(ss.getStream());
-				ds.setContentLength(contentLength);
-				ds.setParameter("Content-Length", String.valueOf(contentLength));
-				ds.setBufferSize(getBufferSize());
-				ds.setCacheTime(getCacheTime());
-
-			}
-			catch (final Exception e)
-			{
-				logger.error(e, e);
-				if (ui != null)
-				{
-					ui.access(new Runnable()
-					{
-
-						@Override
-						public void run()
-						{
-							Notification.show(e.getMessage(), Type.ERROR_MESSAGE);
-
-						}
-					});
-				}
-				else
-				{
-					ErrorWindow.showErrorWindow(e);
-				}
-
-			}
+			return null;
 		}
+		long contentLength = contentLengthProvider.getContentLength();
+		final PartialDownloadStream ds = new PartialDownloadStream(ss.getStream(), getMIMEType(), getFilename());
+		ds.setContentLength(contentLength);
+		ds.setParameter("Content-Length", String.valueOf(contentLength));
+		ds.setBufferSize(getBufferSize());
+		ds.setCacheTime(getCacheTime());
 		return ds;
 	}
+	
+	
+
+	
 
 }

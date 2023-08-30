@@ -2,11 +2,11 @@ package au.com.vaadinutils.editors;
 
 import java.util.Iterator;
 
+import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.vaadin.data.Validator.InvalidValueException;
 import com.vaadin.event.ShortcutAction.KeyCode;
-import com.vaadin.shared.ui.MarginInfo;
 import com.vaadin.ui.AbstractLayout;
 import com.vaadin.ui.Alignment;
 import com.vaadin.ui.Button;
@@ -21,18 +21,16 @@ import com.vaadin.ui.UI;
 import com.vaadin.ui.VerticalLayout;
 import com.vaadin.ui.Window;
 
-import au.com.vaadinutils.errorHandling.ErrorWindow;
-
 @SuppressWarnings("serial")
 public class InputFormDialog extends Window
 {
 
-	Logger logger = org.apache.logging.log4j.LogManager.getLogger();
+	Logger logger = LogManager.getLogger();
 	private HorizontalLayout buttons;
 	private Button cancelButton;
 	private Button ok;
 
-	public InputFormDialog(final UI parent, String title, Component primaryFocusField, final AbstractLayout form,
+	public InputFormDialog(final UI parent, String title, Field<?> primaryFocusField, final AbstractLayout form,
 			final InputFormDialogRecipient recipient)
 	{
 		setCaption(title);
@@ -42,49 +40,31 @@ public class InputFormDialog extends Window
 		this.setResizable(false);
 
 		VerticalLayout layout = new VerticalLayout();
-		layout.setMargin(new MarginInfo(false, true, true, true));
+		// layout.setMargin(new MarginInfo(true, true, true, false));
+		layout.setMargin(true);
 		layout.setSpacing(true);
+		// layout.setSizeFull();
 		layout.addComponent(form);
+		// layout.setComponentAlignment(form, Alignment.TOP_CENTER);
 
 		buttons = new HorizontalLayout();
-		buttons.setSpacing(true);
-		buttons.setHeight("30");
+		// buttons.setSpacing(true);
+		// buttons.setHeight("50");
 
-		cancelButton = createCancelButton(recipient);
+		cancelButton = new Button("Cancel", new Button.ClickListener()
+		{
+			public void buttonClick(ClickEvent event)
+			{
+				if (recipient.onCancel())
+				{
+					close();
+				}
+			}
+		});
 		buttons.addComponent(cancelButton);
 
-		ok = createOkButton(form, recipient);
-
-		ok.setId("Ok");
-
-		ok.setClickShortcut(KeyCode.ENTER);
-		ok.addStyleName("default");
-		buttons.addComponent(ok);
-
-		layout.addComponent(buttons);
-		layout.setComponentAlignment(buttons, Alignment.MIDDLE_RIGHT);
-		layout.setExpandRatio(form, 1);
-
-		this.setContent(layout);
-		parent.addWindow(this);
-
-		if (primaryFocusField instanceof Field<?>)
+		ok = new Button("Ok", new Button.ClickListener()
 		{
-			((Field<?>) primaryFocusField).focus();
-		}
-
-		if (form instanceof FormLayout)
-		{
-			setWidth("500");
-		}
-
-	}
-
-	private Button createOkButton(final AbstractLayout form, final InputFormDialogRecipient recipient)
-	{
-		return new Button("OK", new Button.ClickListener()
-		{
-			@Override
 			public void buttonClick(ClickEvent event)
 			{
 				try
@@ -110,25 +90,33 @@ public class InputFormDialog extends Window
 				}
 				catch (Exception e)
 				{
-					ErrorWindow.showErrorWindow(e);
+					Notification.show(e.getMessage(), Type.ERROR_MESSAGE);
+					logger.error(e, e);
 				}
 			}
 		});
-	}
 
-	private Button createCancelButton(final InputFormDialogRecipient recipient)
-	{
-		return new Button("Cancel", new Button.ClickListener()
+		ok.setId("Ok");
+
+		ok.setClickShortcut(KeyCode.ENTER);
+		ok.addStyleName("default");
+		buttons.addComponent(ok);
+
+		layout.addComponent(buttons);
+		layout.setComponentAlignment(buttons, Alignment.MIDDLE_RIGHT);
+		layout.setExpandRatio(form, 1);
+
+		this.setContent(layout);
+		parent.addWindow(this);
+
+		primaryFocusField.focus();
+
+		if (form instanceof FormLayout)
 		{
-			@Override
-			public void buttonClick(ClickEvent event)
-			{
-				if (recipient.onCancel())
-				{
-					close();
-				}
-			}
-		});
+			setWidth("500");
+		}
+		// setHeight("150");
+
 	}
 
 	public void okOnly()

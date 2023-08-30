@@ -1,6 +1,5 @@
 package au.com.vaadinutils.layout;
 
-import com.vaadin.shared.ui.MarginInfo;
 import com.vaadin.ui.Component;
 import com.vaadin.ui.CustomComponent;
 import com.vaadin.ui.VerticalLayout;
@@ -10,9 +9,9 @@ public class TopVerticalLayout extends CustomComponent
 
 	private static final long serialVersionUID = 7166258936287790784L;
 
-	private VerticalLayout container = new VerticalLayout();
-	private VerticalLayout contents = new VerticalLayout();
-	private VerticalLayout spacer = new VerticalLayout();
+	VerticalLayout container = new VerticalLayout();
+	VerticalLayout contents = new VerticalLayout();
+	VerticalLayout spacer = new VerticalLayout();
 
 	public TopVerticalLayout()
 	{
@@ -27,20 +26,6 @@ public class TopVerticalLayout extends CustomComponent
 
 	}
 
-	public TopVerticalLayout(Component... children)
-	{
-		this();
-		addComponents(children);
-	}
-
-	public void addComponents(Component... components)
-	{
-		for (Component c : components)
-		{
-			addComponent(c);
-		}
-	}
-
 	public void addComponent(Component component)
 	{
 		contents.addComponent(component);
@@ -50,14 +35,9 @@ public class TopVerticalLayout extends CustomComponent
 	{
 		contents.removeComponent(component);
 	}
-
+	
 	public void setMargin(boolean b)
 	{
 		container.setMargin(b);
-	}
-
-	public void setMargin(MarginInfo marginInfo)
-	{
-		container.setMargin(marginInfo);
 	}
 }
