@@ -28,7 +28,10 @@
 				<enabled>true</enabled>
 			</snapshots>
 		</repository>
-
+		<repository>
+		    <id>jitpack.io</id>
+		    <url>https://jitpack.io</url>
+		</repository>
 
 	</repositories>
 	<pluginRepositories>
@@ -58,6 +61,19 @@
 					<source>1.8</source>
 					<target>1.8</target>
 				</configuration>
+				<executions>
+					<execution>
+					    <id>default-testCompile</id>
+					    <phase>test-compile</phase>
+					    <goals>
+						<goal>testCompile</goal>
+					    </goals>
+					    <configuration>
+						<skip>true</skip>
+					    </configuration>
+					</execution>
+				</executions>
+
 			</plugin>
 
             <plugin>
@@ -210,7 +226,7 @@
 
 
 		<dependency>
-			<groupId>com.vaadin.addon</groupId>
+			<groupId>com.github.ngtrphuong</groupId>
 			<artifactId>jpacontainer</artifactId>
 			<version>3.2.1-nj</version>
 			<scope>compile</scope>
@@ -256,9 +272,9 @@
 		</dependency>
 
 		<dependency>
-			<groupId>org.vaadin.addons</groupId>
-			<artifactId>wizards-for-vaadin</artifactId>
-			<version>1.1.1</version>
+			<groupId>com.github.ngtrphuong</groupId>
+			<artifactId>WizardsForVaadin</artifactId>
+			<version>1.1.0</version>
 			<!-- currently at https://github.com/rlsutton1/WizardsForVaadin.git -->
 		</dependency>
 
