@@ -132,7 +132,7 @@ public class HelpSplitPanel extends HorizontalSplitPanel implements View, HelpPa
 		boolean hidden = false;
 		String value = userSettings.get("HelpHidden-" + currentHelpId);
 
-		if (value.equalsIgnoreCase("true"))
+		if ("true".equalsIgnoreCase(value))
 		{
 			hidden = true;
 

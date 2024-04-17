@@ -141,7 +141,7 @@ public class TimePicker extends HorizontalLayout implements Field<Date>
 
 	protected Date parseDate(String value)
 	{
-		if (value == null || value.equals(EMPTY))
+		if (value == null || EMPTY.equals(value))
 		{
 			return null;
 		}

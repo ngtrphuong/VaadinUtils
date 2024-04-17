@@ -60,7 +60,7 @@ public class MenuBuilder implements Serializable
 		for (final ViewMapping viewmap : this.viewMap)
 		{
 			// We don't add a menu item from the default view.
-			if (!viewmap.getViewName().equals(""))
+			if (!"".equals(viewmap.getViewName()))
 			{
 				CrudSecurityManager model = SecurityManagerFactoryProxy.getSecurityManager(viewmap.getView());
 				if (model.canUserView())
