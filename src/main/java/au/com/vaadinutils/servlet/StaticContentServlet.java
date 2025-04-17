@@ -1,5 +1,6 @@
 package au.com.vaadinutils.servlet;
 
+import io.github.pixee.security.Newlines;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -86,7 +87,7 @@ public class StaticContentServlet extends HttpServlet
 			{
 				cacheControl = "max-age=" + String.valueOf(resourceCacheTime);
 			}
-			response.setHeader("Cache-Control", cacheControl);
+			response.setHeader("Cache-Control", Newlines.stripAll(cacheControl));
 		}
 
 		writeStaticResourceResponse(request, response, resource);
